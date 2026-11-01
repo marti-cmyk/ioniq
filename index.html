@@ -322,6 +322,12 @@
     </div>
     <div class="note" id="expRes" style="margin-top:10px">Excel faile: kelionės, krovimai, dienos, savaitės, mėnesiai, elementų įtampos ir SOH. Nukopijuotą lentelę galima įklijuoti tiesiai į Google Sheets.</div>
   </div>
+  <div class="card">
+    <h2>Pradėti iš naujo</h2>
+    <div class="note">Ištrina visas įrašytas keliones, krovimus, elementų ir SOH istoriją – grafikai prasidės nuo nulio. Dabartiniai automobilio duomenys neištrinami.</div>
+    <button class="btn sec" id="btnReset" style="margin-top:12px;color:var(--bad)">Išvalyti grafikų duomenis</button>
+    <div class="note" id="resetInfo" style="margin-top:8px"></div>
+  </div>
 </section>
 
 <!-- ============ MORE ============ -->
@@ -372,7 +378,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 13, APP_DATE = '2026-11-01';
+  const APP_VERSION = 14, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -1078,6 +1084,20 @@
   $('btnCsv').onclick = async () => { $('expRes').textContent = await deliver(new Blob([csvOf(TRIP_HEAD, H('ioniqTrips').map(tripRow))],{type:'text/csv'}), fname('csv')); };
   $('btnCopyT').onclick = () => copyText(tsvOf(TRIP_HEAD, H('ioniqTrips').map(tripRow)), $('btnCopyT'), 'Kopijuoti kelionių lentelę');
   $('btnCopyM').onclick = () => copyText(tsvOf(SUM_HEAD('Mėnuo'), sumRows(d=>ymd(d).slice(0,7))), $('btnCopyM'), 'Kopijuoti mėnesių suvestinę');
+
+  // ---------- reset history ----------
+  const HIST_KEYS = ['ioniqTrips','ioniqCharges','ioniqCellHist','ioniqSoh'];
+  function wipeHistory(){ HIST_KEYS.forEach(k=>LS.set(k, [])); trip=null; chg=null; session=null; LS.set('ioniqResetAt', Date.now()); log('Istorija išvalyta'); }
+  let resetArm=false;
+  $('btnReset').onclick = () => {
+    if (!resetArm){ resetArm=true; $('btnReset').textContent='Tikrai ištrinti? Paspauskite dar kartą'; setTimeout(()=>{ resetArm=false; $('btnReset').textContent='Išvalyti grafikų duomenis'; }, 4000); return; }
+    resetArm=false; wipeHistory(); $('btnReset').textContent='Išvalyta ✓'; setTimeout(()=>$('btnReset').textContent='Išvalyti grafikų duomenis', 2500);
+    render(); renderCharts(); renderResetInfo();
+  };
+  function renderResetInfo(){ const at=LS.get('ioniqResetAt', null); $('resetInfo').textContent = at ? 'Duomenys renkami nuo '+stamp(at) : ''; }
+  // the owner asked to discard everything recorded before v14
+  if (!LS.get('ioniqWiped14', false)){ wipeHistory(); LS.set('ioniqWiped14', true); }
+  renderResetInfo();
 
   function renderDataInfo(){
     $('dataCnt').textContent = H('ioniqTrips').length+' kel., '+H('ioniqCharges').length+' krov.';
