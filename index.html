@@ -301,6 +301,10 @@
   <div class="card">
     <h2>Google Sheets</h2>
     <div class="sw" style="border:0;padding-top:0"><div id="syncInfo">Neprijungta</div><button class="btn small sec" id="btnSync">Siųsti dabar</button></div>
+    <div class="kv"><span>Ryšys su lentele</span><b id="pingRes">–</b></div>
+    <div class="kv"><span>Įrašyta telefone</span><b class="num" id="dataCnt">–</b></div>
+    <div class="kv"><span>Rida (reikalinga kelionėms)</span><b class="num" id="odoState">–</b></div>
+    <div class="row" style="margin-top:12px"><button class="btn small sec" id="btnPing">Tikrinti ryšį</button><button class="btn small sec" id="btnResend">Siųsti viską iš naujo</button></div>
   </div>
 
   <div class="card">
@@ -328,7 +332,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 7, APP_DATE = '2026-11-01';
+  const APP_VERSION = 8, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -336,7 +340,7 @@
     '49535343-fe7d-4ae5-8fa9-9fafd205e455'
   ];
   const $ = id => document.getElementById(id);
-  const errText = e => { try{ if (!e) return 'nežinoma klaida'; if (typeof e==='string') return e; const t=[e.name,e.message].filter(Boolean).join(': '); return t || JSON.stringify(e) || String(e); }catch(_){ return String(e); } };
+  const errText = e => { try{ if (!e) return 'nežinoma klaida'; if (typeof e==='string') return e; const t=(e.name && e.name!=='Error' ? e.name+': ' : '')+(e.message||''); return t || JSON.stringify(e) || String(e); }catch(_){ return String(e); } };
   const LS = {
     get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } },
     set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -880,12 +884,37 @@
     return { id:String(c.id), start:stamp(c.t0), end:stamp(c.t1||c.t0), day:ymd(d), week:mondayOf(d), month:ymd(d).slice(0,7),
       kwh, soc0:c.soc0, soc1:c.soc1, type:c.type||'', avgKw: min>=1 ? kwh/(min/60) : null, minutes:min };
   }
-  async function post(cfg, body){
-    if (navigator.onLine === false) return false;
-    const data = JSON.stringify(body);
-    try{ if (navigator.sendBeacon && navigator.sendBeacon(cfg.url, new Blob([data],{type:'text/plain;charset=utf-8'}))) return true; }catch(e){}
-    try{ await fetch(cfg.url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:data}); return true; }catch(e){ log('Sinchronizacija nepavyko: '+errText(e)); return false; }
+  // JSONP: works across origins and returns a confirmation from the sheet
+  function jsonp(url, params, ms=25000){
+    return new Promise((resolve, reject)=>{
+      const cb = '__ioniq'+Date.now()+Math.floor(Math.random()*1e4);
+      const sc = document.createElement('script');
+      const done = () => { clearTimeout(tm); try{ delete window[cb]; }catch(_){ window[cb]=undefined; } sc.remove(); };
+      const tm = setTimeout(()=>{ done(); reject(new Error('neatsako per '+(ms/1000)+' s')); }, ms);
+      window[cb] = d => { done(); resolve(d); };
+      sc.onerror = () => { done(); reject(new Error('nepavyko pasiekti Google')); };
+      sc.src = url + '?' + new URLSearchParams({...params, callback: cb}).toString();
+      document.head.appendChild(sc);
+    });
   }
+  let lastSyncErr = null;
+  async function post(cfg, body){
+    if (navigator.onLine === false){ lastSyncErr='nėra interneto'; return false; }
+    try{
+      const r = await jsonp(cfg.url, { d: JSON.stringify(body) });
+      if (r && r.ok){ lastSyncErr=null; return true; }
+      lastSyncErr = (r && r.error) || 'nežinoma klaida'; log('Lentelė atsakė klaida: '+lastSyncErr); return false;
+    }catch(e){ lastSyncErr = errText(e); log('Sinchronizacija nepavyko: '+lastSyncErr); return false; }
+  }
+  async function ping(){
+    const cfg = syncCfg();
+    if (!cfg){ $('pingRes').textContent='neprijungta'; return; }
+    $('pingRes').textContent='tikrinama…';
+    try{ const r = await jsonp(cfg.url, { ping:1, token:cfg.token }, 15000); $('pingRes').innerHTML = r && r.ok ? '<span style="color:var(--gain)">veikia ✓</span>' : '<span style="color:var(--bad)">'+((r&&r.error)||'klaida')+'</span>'; }
+    catch(e){ $('pingRes').innerHTML = '<span style="color:var(--bad)">'+errText(e)+'</span>'; }
+  }
+  $('btnPing').onclick = ping;
+  $('btnResend').onclick = () => syncNow(true).then(()=>{ $('btnResend').textContent = lastSyncErr ? 'Nepavyko' : 'Išsiųsta ✓'; setTimeout(()=>$('btnResend').textContent='Siųsti viską iš naujo',2500); });
   let syncTimer=null;
   function syncSoon(){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(false), 3000); }
   async function syncNow(all){
@@ -896,9 +925,8 @@
     const cq = charges.filter(c => all || !c.sent || c.sent < (c.t1||0));
     if (!tq.length && !cq.length){ LS.set('ioniqSyncAt', Date.now()); renderSyncInfo(); return; }
     const now = Date.now(); let ok = true;
-    for (let i=0; i<Math.max(tq.length,cq.length); i+=40){
-      const r = await post(cfg, { token:cfg.token, trips:tq.slice(i,i+40).map(tripPayload), charges:cq.slice(i,i+40).map(chgPayload) });
-      ok = ok && r;
+    for (let i=0; i<Math.max(tq.length,cq.length) && ok; i+=8){
+      ok = await post(cfg, { token:cfg.token, trips:tq.slice(i,i+8).map(tripPayload), charges:cq.slice(i,i+8).map(chgPayload) });
     }
     if (ok){
       const ids = new Set([...tq,...cq].map(x=>x.id));
@@ -913,10 +941,12 @@
     const cfg = syncCfg(), at = LS.get('ioniqSyncAt', null);
     const pend = LS.get('ioniqTrips',[]).filter(t=>!t.sent || t.sent<(t.t1||0)).length + LS.get('ioniqCharges',[]).filter(c=>!c.sent || c.sent<(c.t1||0)).length;
     $('syncInfo').innerHTML = msg ? msg : !cfg ? 'Neprijungta<div class="note">Atidarykite nustatymo nuorodą</div>' :
-      (at ? 'Išsiųsta '+stamp(at) : 'Prijungta') + (pend ? `<div class="note">Laukia išsiuntimo: ${pend}</div>` : '<div class="note">Viskas išsiųsta</div>');
+      (!(LS.get('ioniqTrips',[]).length + LS.get('ioniqCharges',[]).length) ? 'Prijungta<div class="note">Dar nėra įrašytų kelionių ar krovimų</div>' : at ? 'Išsiųsta '+stamp(at) : 'Prijungta') + (lastSyncErr ? `<div class="note" style="color:var(--bad)">Klaida: ${lastSyncErr}</div>` : '') + (pend ? `<div class="note">Laukia išsiuntimo: ${pend}</div>` : '<div class="note">Viskas išsiųsta</div>');
     $('btnSync').disabled = !cfg;
+    $('dataCnt').textContent = LS.get('ioniqTrips',[]).length+' kel., '+LS.get('ioniqCharges',[]).length+' krov.';
+    $('odoState').innerHTML = S.odo!=null ? S.odo.toLocaleString('lt-LT')+' km ✓' : (running ? '<span style="color:var(--warn)">nenuskaityta</span>' : '–');
   }
-  $('btnSync').onclick = () => syncNow(true).then(()=>{ $('btnSync').textContent='Išsiųsta ✓'; setTimeout(()=>$('btnSync').textContent='Siųsti dabar',2500); });
+  $('btnSync').onclick = () => syncNow(false).then(()=>{ $('btnSync').textContent = lastSyncErr ? 'Nepavyko' : 'Išsiųsta ✓'; setTimeout(()=>$('btnSync').textContent='Siųsti dabar',2500); });
   setInterval(()=>{ if (running) syncNow(false); }, 120e3);
   window.addEventListener('online', ()=>syncNow(false));
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden') syncNow(false); });
@@ -978,6 +1008,7 @@
   log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
   checkUpdate(); setInterval(checkUpdate, 10*60e3);
+  if (syncCfg()) { ping(); syncNow(false); }
 })();
 </script>
 </body>
