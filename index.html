@@ -170,9 +170,10 @@
   // ---------- BLE UUIDs used by common ELM327 BLE adapters (Vgate iCar Pro first) ----------
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
-    0xfff0, 0xffe0, 0x18f0, 0xffb0, 0xfee7,
+    ...['fff0','ffe0','18f0','ffb0','fee7'].map(x=>'0000'+x+'-0000-1000-8000-00805f9b34fb'),
     '49535343-fe7d-4ae5-8fa9-9fafd205e455'
   ];
+  const errText = e => { try{ if (!e) return 'nežinoma klaida'; if (typeof e==='string') return e; const t=[e.name,e.message].filter(Boolean).join(': '); return t || JSON.stringify(e) || String(e); }catch(_){ return String(e); } };
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
 
   const $ = id => document.getElementById(id);
@@ -220,7 +221,7 @@
     }));
     chain = job.catch(()=>{});
     return job.then(r => { log('> '+cmd+'  ⇒ '+r.replace(/[\r\n]+/g,' | ').trim()); return r; },
-                    e => { log('! '+e.message); throw e; });
+                    e => { log('! '+errText(e)); throw e; });
   }
 
   // Parse ELM327 response (ATH0, ATS0, CAF1) to bytes following the given hex prefix (e.g. "6101")
@@ -346,10 +347,21 @@
     stopDemo();
     try{
       setStatus('Ieškoma…','busy');
-      device = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:SERVICES });
+      log('Ieškoma įrenginio…');
+      try{
+        device = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:SERVICES });
+      }catch(e1){
+        log('acceptAllDevices nepavyko: '+errText(e1)+' – bandoma su filtrais');
+        if (/cancel/i.test(errText(e1))) throw e1;
+        device = await navigator.bluetooth.requestDevice({
+          filters:[{namePrefix:'IOS'},{namePrefix:'Vlink'},{namePrefix:'V-LINK'},{namePrefix:'Android'},{namePrefix:'OBD'},{namePrefix:'vgate'},{namePrefix:'iCar'},{services:[SERVICES[0]]}],
+          optionalServices:SERVICES });
+      }
       log('Pasirinkta: '+(device.name||device.id));
       device.addEventListener('gattserverdisconnected', onDisconnected);
+      log('Jungiamasi prie GATT…');
       const server = await device.gatt.connect();
+      log('GATT prisijungta');
       let found=false;
       let svcs=[];
       try{ svcs = await server.getPrimaryServices(); }catch(e){
@@ -371,9 +383,9 @@
       try{ if (navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){}
       loop();
     }catch(e){
-      log('Klaida: '+e.message);
+      log('Klaida: '+errText(e));
       setStatus('Neprisijungta','');
-      if (!/cancel/i.test(e.message)) showErr('Nepavyko prisijungti: '+e.message+'. Patikrinkite, ar ABRP uždaryta, ir bandykite dar kartą.');
+      if (!/cancel/i.test(errText(e))) showErr('Nepavyko prisijungti: '+errText(e)+'. Patikrinkite, ar ABRP uždaryta, ir bandykite dar kartą.');
       try{ device && device.gatt.connected && device.gatt.disconnect(); }catch(_){}
     }
   }
@@ -473,6 +485,7 @@
   $('btnCopy').onclick = async () => { try{ await navigator.clipboard.writeText(logLines.join('\n')); $('btnCopy').textContent='Nukopijuota ✓'; }catch(e){ $('btnCopy').textContent='Nepavyko nukopijuoti'; } };
 
   load(); render();
+  log('Versija 2 · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
 })();
 </script>
