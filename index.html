@@ -378,7 +378,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 14, APP_DATE = '2026-11-01';
+  const APP_VERSION = 15, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -548,7 +548,7 @@
       await send('ATCRA7CE');
       const r = await send('22B002', 4000);
       const b = parse(r, '62B002');
-      if (has(b,8)){ const v=(b[6]<<16)+(b[7]<<8)+b[8]; if (v>0 && v<2000000) S.odo=v; }
+      if (has(b,8)){ const v=(b[6]<<16)+(b[7]<<8)+b[8]; if (v>0 && v<2000000){ S.odo=v; S.odoAt=Date.now(); } }
     }catch(e){}
     try{ await send('ATAR'); }catch(e){}
   }
@@ -613,7 +613,9 @@
     }
     throw new Error('Nerasta OBD duomenų paslauga šiame įrenginyje.');
   }
+  let connStart = 0;
   async function start(){
+    connStart = Date.now();
     $('btnConn').textContent='Atsijungti';
     await initElm();
     running=true; manualStop=false; wake();
@@ -685,10 +687,13 @@
   const H = k => demoHist ? demoHist[k] : LS.get(k, []);
   const thr = {};
   function throttle(k, ms){ const n=Date.now(); if (!thr[k] || n-thr[k]>=ms){ thr[k]=n; return true; } return false; }
+  // plausible consumption for an Ioniq: 6..40 kWh/100 km
+  const CONS_OK = c => c!=null && c>=6 && c<=40;
   function tripStats(t){
     const km = (t.odo1!=null && t.odo0!=null) ? t.odo1-t.odo0 : 0;
     const kwh = (t.ced1-t.ced0) - (t.cec1-t.cec0);
-    return { km, kwh, cons: km>=1 ? kwh/km*100 : null };
+    const cons = km>=3 ? kwh/km*100 : null;
+    return { km, kwh, cons, ok: km>=3 && CONS_OK(cons) };
   }
   function track(){
     const soc = S.socDisp ?? S.socBms;
@@ -703,11 +708,15 @@
       }
     } else {
       if (chg) { chg=null; }
-      if (S.ced!=null){
-        if (!trip) trip = { id:Date.now(), t0:Date.now(), odo0:S.odo??null, ced0:S.ced, cec0:S.cec, soc0:soc };
-        if (trip.odo0==null && S.odo!=null) trip.odo0 = S.odo;
-        Object.assign(trip, { t1:Date.now(), odo1:S.odo, ced1:S.ced, cec1:S.cec, soc1:soc });
-        if (tripStats(trip).km>=1 && throttle('trip', 10e3)){
+      // only trust an odometer value read during this connection (a stale one would add km driven without the app)
+      const odo = (S.odoAt && S.odoAt >= connStart) ? S.odo : null;
+      if (S.ced!=null && odo!=null){
+        // distance and energy are always measured over the same interval
+        if (!trip) trip = { id:Date.now(), t0:Date.now(), odo0:odo, ced0:S.ced, cec0:S.cec, soc0:soc };
+        Object.assign(trip, { t1:Date.now(), odo1:odo, ced1:S.ced, cec1:S.cec, soc1:soc });
+        const st = tripStats(trip), hrs = (trip.t1-trip.t0)/3600e3;
+        if (st.km > hrs*150 + 2){ log(`Kelionė atmesta: ${st.km} km per ${Math.round(hrs*60)} min – neteisinga rida`); trip=null; }
+        else if (st.km>=1 && throttle('trip', 10e3)){
           const list = LS.get('ioniqTrips',[]).filter(x=>x.id!==trip.id);
           list.unshift({...trip}); LS.set('ioniqTrips', list.slice(0,2000));
         }
@@ -729,8 +738,9 @@
     }
   }
   function avgConsumption(){
-    let km=0, kwh=0; for (const t of H('ioniqTrips').slice(0,20)){ const st=tripStats(t); if (st.km>=1){ km+=st.km; kwh+=st.kwh; } }
-    return km>=5 && kwh>0 ? kwh/km*100 : null;
+    let km=0, kwh=0; for (const t of H('ioniqTrips').slice(0,20)){ const st=tripStats(t); if (st.ok){ km+=st.km; kwh+=st.kwh; } }
+    const c = km>=10 ? kwh/km*100 : null;
+    return CONS_OK(c) ? c : null;
   }
 
   // ---------- render ----------
@@ -893,10 +903,10 @@
   // ---------- statistics ----------
   let tripShow = 10;
   function sumBy(trips, charges, pred){
-    let km=0, kwh=0, n=0, ch=0;
-    for (const t of trips){ if (!pred(new Date(t.t0))) continue; const st=tripStats(t); km+=st.km; kwh+=st.kwh; n++; }
+    let km=0, kwh=0, n=0, ch=0, okKm=0, okKwh=0;
+    for (const t of trips){ if (!pred(new Date(t.t0))) continue; const st=tripStats(t); km+=st.km; kwh+=st.kwh; n++; if (st.ok){ okKm+=st.km; okKwh+=st.kwh; } }
     for (const c of charges){ if (pred(new Date(c.t0))) ch += (c.cec1-c.cec0)||0; }
-    return { km, kwh, n, ch, cons: km>=1 ? kwh/km*100 : null };
+    return { km, kwh, n, ch, cons: okKm>=3 ? okKwh/okKm*100 : null };
   }
   function renderStats(avgCons){
     const trips = H('ioniqTrips'), charges = H('ioniqCharges');
@@ -916,7 +926,7 @@
     $('btnMoreTrips').style.display = trips.length > tripShow ? '' : 'none';
     $('trips').innerHTML = trips.length ? trips.slice(0,tripShow).map(t=>{
       const st=tripStats(t), d=new Date(t.t0);
-      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})}, ${pad(d.getHours())}:${pad(d.getMinutes())}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'} → ${t.soc1!=null?Math.round(t.soc1):'–'} % · ${f(st.kwh,1)} kWh</div></div><div class="b"><div>${f(st.km,0)} km</div><div class="a">${st.cons==null?'–':f(st.cons,1)+' kWh/100'}</div></div></div>`;
+      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})}, ${pad(d.getHours())}:${pad(d.getMinutes())}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'} → ${t.soc1!=null?Math.round(t.soc1):'–'} % · ${f(st.kwh,1)} kWh</div></div><div class="b"><div>${f(st.km,0)} km</div><div class="a">${st.ok?f(st.cons,1)+' kWh/100':'–'}</div></div></div>`;
     }).join('') : '<div class="note">Kelionės įrašomos automatiškai, kai važiuojant programėlė prisijungusi (nuo 1 km).</div>';
   }
   $('btnMoreTrips').onclick = () => { tripShow += 20; render(); };
@@ -941,14 +951,14 @@
   // group trips and charges by a key (day / week / month)
   function groupBy(keyOf){
     const g = {};
-    const get = k => g[k] || (g[k] = { km:0, kwh:0, ch:0, n:0 });
-    for (const t of H('ioniqTrips')){ const st=tripStats(t), r=get(keyOf(new Date(t.t0))); r.km+=st.km; r.kwh+=st.kwh; r.n++; }
+    const get = k => g[k] || (g[k] = { km:0, kwh:0, ch:0, n:0, okKm:0, okKwh:0 });
+    for (const t of H('ioniqTrips')){ const st=tripStats(t), r=get(keyOf(new Date(t.t0))); r.km+=st.km; r.kwh+=st.kwh; r.n++; if (st.ok){ r.okKm+=st.km; r.okKwh+=st.kwh; } }
     for (const c of H('ioniqCharges')){ get(keyOf(new Date(c.t0))).ch += (c.cec1-c.cec0)||0; }
     return g;
   }
   function sumRows(keyOf){
     const g = groupBy(keyOf);
-    return Object.keys(g).sort().reverse().map(k=>{ const r=g[k]; return [k, r.n, rnd(r.km,1), rnd(r.kwh,2), r.km>=1 ? rnd(r.kwh/r.km*100,1) : null, rnd(r.ch,2)]; });
+    return Object.keys(g).sort().reverse().map(k=>{ const r=g[k]; return [k, r.n, rnd(r.km,1), rnd(r.kwh,2), r.okKm>=3 ? rnd(r.okKwh/r.okKm*100,1) : null, rnd(r.ch,2)]; });
   }
   const SUM_HEAD = p => [p,'Kelionių','Km','Sunaudota kWh','kWh/100 km','Įkrauta kWh'];
 
@@ -985,9 +995,10 @@
     const keys = Array.from({length:P.n},(_,i)=>P.key(P.step(now, P.n-1-i)));
     const g = groupBy(P.key);
     const km = keys.map(k=>g[k]?g[k].km:0), used = keys.map(k=>g[k]?g[k].kwh:0), ch = keys.map(k=>g[k]?g[k].ch:0);
-    const cons = keys.map(k=>g[k] && g[k].km>=1 ? g[k].kwh/g[k].km*100 : 0);
+    const cons = keys.map(k=>g[k] && g[k].okKm>=3 ? g[k].okKwh/g[k].okKm*100 : 0);
     const tkm = km.reduce((a,b)=>a+b,0), tused = used.reduce((a,b)=>a+b,0), tch = ch.reduce((a,b)=>a+b,0), days = keys.filter((k,i)=>km[i]>0).length;
-    const avg = tkm>=1 ? tused/tkm*100 : null;
+    const okKm = keys.reduce((a,k)=>a+(g[k]?g[k].okKm:0),0), okKwh = keys.reduce((a,k)=>a+(g[k]?g[k].okKwh:0),0);
+    const avg = okKm>=10 && CONS_OK(okKwh/okKm*100) ? okKwh/okKm*100 : null;
     const nTrips = keys.reduce((a,k)=>a+(g[k]?g[k].n:0),0);
     setH('chPerNote', P.note);
     setH('chKmTot', `<span>Iš viso <b>${f(tkm,0)}</b> km</span>` + (P.unit==='val.' ? `<span>Kelionių <b>${nTrips}</b></span>` : `<span>Vid. <b>${f(days?tkm/days:0,0)}</b> km/${P.unit} (kai važiuota)</span>`));
@@ -996,7 +1007,7 @@
     const empty = '<div class="note">Dar nėra duomenų šiam laikotarpiui. Kelionės įrašomos, kai važiuojant programėlė prisijungusi.</div>';
     $('chKm').innerHTML = tkm ? bars(keys, P.lab, P.every, [{vals:km, color:'var(--acc)'}]) : empty;
     $('chKwh').innerHTML = (tused||tch) ? bars(keys, P.lab, P.every, [{vals:used, color:'var(--use)'},{vals:ch, color:'var(--gain)'}]) : empty;
-    $('chCons').innerHTML = avg ? bars(keys, P.lab, P.every, [{vals:cons, color:'var(--acc)'}], {avg, min:20}) + '<div class="glab"><span></span><span>punktyras – vidurkis</span></div>' : empty;
+    $('chCons').innerHTML = !avg ? (tkm ? '<div class="note">Dar per mažai patikimų kelionių vidurkiui (reikia bent 10 km).</div>' : empty) : bars(keys, P.lab, P.every, [{vals:cons, color:'var(--acc)'}], {avg, min:20}) + '<div class="glab"><span></span><span>punktyras – vidurkis</span></div>';
     const sh = H('ioniqSoh');
     if (sh.length>=2){
       const W=320,Hh=100, mn=Math.min(...sh.map(x=>x.soh))-0.5, mx=Math.max(...sh.map(x=>x.soh))+0.5;
@@ -1096,7 +1107,7 @@
   };
   function renderResetInfo(){ const at=LS.get('ioniqResetAt', null); $('resetInfo').textContent = at ? 'Duomenys renkami nuo '+stamp(at) : ''; }
   // the owner asked to discard everything recorded before v14
-  if (!LS.get('ioniqWiped14', false)){ wipeHistory(); LS.set('ioniqWiped14', true); }
+  if (!LS.get('ioniqWiped15', false)){ wipeHistory(); LS.set('ioniqWiped15', true); LS.set('ioniqWiped14', true); }
   renderResetInfo();
 
   function renderDataInfo(){
