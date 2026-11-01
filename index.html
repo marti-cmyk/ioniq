@@ -332,7 +332,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 9, APP_DATE = '2026-11-01';
+  const APP_VERSION = 10, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -1043,7 +1043,8 @@
   log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
   checkUpdate(); setInterval(checkUpdate, 10*60e3);
-  if (syncCfg()) { ping(); syncNow(false); }
+  // older versions could mark trips as sent although Google never got them -> resend everything once
+  if (syncCfg()) { ping(); const once = !LS.get('ioniqResent10', false); syncNow(once).then(()=>{ if (once && !lastSyncErr) LS.set('ioniqResent10', true); }); }
 })();
 </script>
 </body>
