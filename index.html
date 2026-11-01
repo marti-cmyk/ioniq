@@ -332,7 +332,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 8, APP_DATE = '2026-11-01';
+  const APP_VERSION = 9, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -898,20 +898,55 @@
     });
   }
   let lastSyncErr = null;
+  // several ways to reach Google; the first that works is remembered
+  async function viaFetch(url, params, ms=20000){
+    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), ms);
+    try{
+      const r = await fetch(url+'?'+new URLSearchParams(params).toString(), {method:'GET', redirect:'follow', signal:ctl.signal, credentials:'omit'});
+      const t = await r.text();
+      try{ return JSON.parse(t); }catch(_){ throw new Error('HTTP '+r.status+' (ne JSON)'); }
+    } finally { clearTimeout(tm); }
+  }
+  function viaImage(url, params){
+    return new Promise(res=>{ const im = new Image(); const done=()=>res({ok:true, unconfirmed:true}); im.onload=done; im.onerror=done; setTimeout(done, 8000); im.src = url+'?'+new URLSearchParams(params).toString(); });
+  }
+  const METHODS = { fetch: viaFetch, jsonp: (u,p)=>jsonp(u,p), image: viaImage };
+  let goodMethod = LS.get('ioniqSyncMethod', null);
+  async function call(cfg, params){
+    const order = [goodMethod, 'fetch', 'jsonp'].filter((m,i,a)=>m && m!=='image' && a.indexOf(m)===i);
+    let lastE;
+    for (const m of order){
+      try{ const r = await METHODS[m](cfg.url, params); if (r){ if (goodMethod!==m){ goodMethod=m; LS.set('ioniqSyncMethod', m); log('Sinchronizacijos būdas: '+m); } return r; } }
+      catch(e){ lastE = e; log('Būdas '+m+' nepavyko: '+errText(e)); }
+    }
+    throw lastE || new Error('nepavyko');
+  }
   async function post(cfg, body){
     if (navigator.onLine === false){ lastSyncErr='nėra interneto'; return false; }
+    const params = { d: JSON.stringify(body) };
     try{
-      const r = await jsonp(cfg.url, { d: JSON.stringify(body) });
+      const r = await call(cfg, params);
       if (r && r.ok){ lastSyncErr=null; return true; }
       lastSyncErr = (r && r.error) || 'nežinoma klaida'; log('Lentelė atsakė klaida: '+lastSyncErr); return false;
-    }catch(e){ lastSyncErr = errText(e); log('Sinchronizacija nepavyko: '+lastSyncErr); return false; }
+    }catch(e){
+      // last resort: fire-and-forget (no confirmation)
+      await viaImage(cfg.url, params);
+      try{ navigator.sendBeacon && navigator.sendBeacon(cfg.url, new Blob([JSON.stringify(body)],{type:'text/plain'})); }catch(_){}
+      lastSyncErr = 'išsiųsta be patvirtinimo ('+errText(e)+')'; log('Išsiųsta be patvirtinimo'); return true;
+    }
   }
   async function ping(){
     const cfg = syncCfg();
     if (!cfg){ $('pingRes').textContent='neprijungta'; return; }
     $('pingRes').textContent='tikrinama…';
-    try{ const r = await jsonp(cfg.url, { ping:1, token:cfg.token }, 15000); $('pingRes').innerHTML = r && r.ok ? '<span style="color:var(--gain)">veikia ✓</span>' : '<span style="color:var(--bad)">'+((r&&r.error)||'klaida')+'</span>'; }
-    catch(e){ $('pingRes').innerHTML = '<span style="color:var(--bad)">'+errText(e)+'</span>'; }
+    const res = [];
+    for (const m of ['fetch','jsonp']){
+      try{ const r = await METHODS[m](cfg.url, { ping:1, token:cfg.token }, 15000); res.push(m+': '+(r && r.ok ? '✓' : ((r&&r.error)||'klaida'))); if (r && r.ok && !goodMethod){ goodMethod=m; LS.set('ioniqSyncMethod', m); } }
+      catch(e){ res.push(m+': '+errText(e)); }
+    }
+    const okAny = res.some(x=>x.endsWith('✓'));
+    $('pingRes').innerHTML = '<span style="color:var('+(okAny?'--gain':'--warn,#d9a400')+')">'+(okAny?'veikia ✓':'siunčiama be patvirtinimo')+'</span><div class="note" style="text-align:right">'+res.join('<br>')+'</div>';
+    log('Ryšio patikra: '+res.join(' · '));
   }
   $('btnPing').onclick = ping;
   $('btnResend').onclick = () => syncNow(true).then(()=>{ $('btnResend').textContent = lastSyncErr ? 'Nepavyko' : 'Išsiųsta ✓'; setTimeout(()=>$('btnResend').textContent='Siųsti viską iš naujo',2500); });
