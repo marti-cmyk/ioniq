@@ -107,7 +107,7 @@
   .cbar i{flex:1}
   .cbarl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);margin-top:4px}
   .seg2{display:inline-grid;grid-auto-flow:column;background:var(--s2);border-radius:10px;padding:3px;gap:3px}
-  .seg2 button{all:unset;text-align:center;padding:5px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--mut)}
+  .seg2 button{all:unset;text-align:center;padding:5px 10px;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--mut)}
   .seg2 button.on{background:var(--s1);color:var(--txt);font-weight:600}
   .hrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
   .hrow h2{margin:0}
@@ -304,7 +304,8 @@
 
 <!-- ============ CHARTS ============ -->
 <section class="tab" id="tab-charts">
-  <div class="hrow"><div class="seg2" id="chPeriod"><button data-p="d">30 dienų</button><button data-p="w">12 savaičių</button><button data-p="m">12 mėnesių</button></div></div>
+  <div class="hrow"><div class="seg2" id="chPeriod"><button data-p="h">Diena</button><button data-p="w">Savaitė</button><button data-p="d">30 d.</button><button data-p="m6">6 mėn.</button><button data-p="m">12 mėn.</button></div></div>
+  <div class="note" id="chPerNote" style="margin:-4px 0 10px 2px"></div>
   <div class="card chart"><h2>Nuvažiuota, km</h2><div class="ctot num" id="chKmTot"></div><div id="chKm"></div></div>
   <div class="card chart"><h2>Energija, kWh</h2><div class="ctot num" id="chKwhTot"></div><div id="chKwh"></div>
     <div class="legend"><span><i style="background:var(--use)"></i>sunaudota</span><span><i style="background:var(--gain)"></i>įkrauta</span></div></div>
@@ -371,7 +372,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 12, APP_DATE = '2026-11-01';
+  const APP_VERSION = 13, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -947,11 +948,15 @@
 
   // ---------- charts ----------
   const PERIODS = {
-    d: { n:30, key:d=>ymd(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-i); return x; }, lab:k=>+k.slice(8), every:5 },
-    w: { n:12, key:d=>mondayOf(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-7*i); return x; }, lab:k=>k.slice(8)+'.'+k.slice(5,7), every:3 },
-    m: { n:12, key:d=>ymd(d).slice(0,7), step:(d,i)=>{ const x=new Date(d.getFullYear(), d.getMonth()-i, 15); return x; }, lab:k=>MONTHS[+k.slice(5,7)-1].replace('.',''), every:2 }
+    // last 24 hours, by hour
+    h: { n:24, key:d=>ymd(d)+' '+pad(d.getHours()), step:(d,i)=>new Date(d.getTime()-i*3600e3), lab:k=>k.slice(11), every:3, unit:'val.', note:'Paskutinės 24 valandos' },
+    // last 7 days, by day
+    w: { n:7, key:d=>ymd(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-i); return x; }, lab:k=>['Sk','Pr','An','Tr','Kt','Pn','Št'][new Date(k+'T12:00').getDay()], every:1, unit:'d.', note:'Paskutinės 7 dienos' },
+    d: { n:30, key:d=>ymd(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-i); return x; }, lab:k=>+k.slice(8), every:5, unit:'d.', note:'Paskutinės 30 dienų' },
+    m6: { n:6, key:d=>ymd(d).slice(0,7), step:(d,i)=>new Date(d.getFullYear(), d.getMonth()-i, 15), lab:k=>MONTHS[+k.slice(5,7)-1].replace('.',''), every:1, unit:'mėn.', note:'Paskutiniai 6 mėnesiai' },
+    m: { n:12, key:d=>ymd(d).slice(0,7), step:(d,i)=>new Date(d.getFullYear(), d.getMonth()-i, 15), lab:k=>MONTHS[+k.slice(5,7)-1].replace('.',''), every:2, unit:'mėn.', note:'Paskutiniai 12 mėnesių' }
   };
-  function syncPeriod(){ document.querySelectorAll('#chPeriod button').forEach(b=>b.classList.toggle('on', b.dataset.p===(SET.chPeriod||'d'))); }
+  function syncPeriod(){ document.querySelectorAll('#chPeriod button').forEach(b=>b.classList.toggle('on', b.dataset.p===(PERIODS[SET.chPeriod] ? SET.chPeriod : 'd'))); }
   document.querySelectorAll('#chPeriod button').forEach(b=>b.onclick=()=>{ SET.chPeriod=b.dataset.p; saveSet(); syncPeriod(); renderCharts(); });
   syncPeriod();
   // bars: series = [{vals, color}], several series are drawn side by side
@@ -970,15 +975,16 @@
   function niceMax(v){ const e=Math.pow(10,Math.floor(Math.log10(v))), m=v/e; return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*e; }
   const fmtNum = v => v>=100 ? Math.round(v).toLocaleString('lt-LT') : Number.isInteger(v) ? String(v) : f(v,1);
   function renderCharts(){
-    const P = PERIODS[SET.chPeriod||'d'], now = new Date();
+    const P = PERIODS[SET.chPeriod] || PERIODS.d, now = new Date();
     const keys = Array.from({length:P.n},(_,i)=>P.key(P.step(now, P.n-1-i)));
     const g = groupBy(P.key);
     const km = keys.map(k=>g[k]?g[k].km:0), used = keys.map(k=>g[k]?g[k].kwh:0), ch = keys.map(k=>g[k]?g[k].ch:0);
     const cons = keys.map(k=>g[k] && g[k].km>=1 ? g[k].kwh/g[k].km*100 : 0);
     const tkm = km.reduce((a,b)=>a+b,0), tused = used.reduce((a,b)=>a+b,0), tch = ch.reduce((a,b)=>a+b,0), days = keys.filter((k,i)=>km[i]>0).length;
     const avg = tkm>=1 ? tused/tkm*100 : null;
-    const unit = {d:'d.',w:'sav.',m:'mėn.'}[SET.chPeriod||'d'];
-    setH('chKmTot', `<span>Iš viso <b>${f(tkm,0)}</b> km</span><span>Vid. <b>${f(days?tkm/days:0,0)}</b> km/${unit} (kai važiuota)</span>`);
+    const nTrips = keys.reduce((a,k)=>a+(g[k]?g[k].n:0),0);
+    setH('chPerNote', P.note);
+    setH('chKmTot', `<span>Iš viso <b>${f(tkm,0)}</b> km</span>` + (P.unit==='val.' ? `<span>Kelionių <b>${nTrips}</b></span>` : `<span>Vid. <b>${f(days?tkm/days:0,0)}</b> km/${P.unit} (kai važiuota)</span>`));
     setH('chKwhTot', `<span>Sunaudota <b>${f(tused,1)}</b></span><span>Įkrauta <b>${f(tch,1)}</b></span>`);
     setH('chConsTot', `<span>Vidurkis <b>${avg==null?'–':f(avg,1)}</b> kWh/100 km</span>${avg?`<span>≈ <b>${Math.round(USABLE_KWH*((S.soh??100)/100)/avg*100)}</b> km su pilna baterija</span>`:''}`);
     const empty = '<div class="note">Dar nėra duomenų šiam laikotarpiui. Kelionės įrašomos, kai važiuojant programėlė prisijungusi.</div>';
