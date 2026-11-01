@@ -5,281 +5,392 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0c0f14">
+<meta name="theme-color" content="#111418">
 <title>Ioniq Monitorius</title>
 <style>
-  :root{
-    --bg:#0c0f14; --card:#151a22; --card2:#1b212b; --line:#252c38;
-    --txt:#e8edf4; --mut:#8a94a6; --acc:#3fd0c9; --pos:#ff8a4c; --neg:#4cd07a; --warn:#ffcc4d; --bad:#ff5d5d;
+  :root, :root[data-theme="dark"]{
+    --bg:#111418; --s1:#181c21; --s2:#20252c; --line:#272d35;
+    --txt:#e4e6e9; --mut:#8a919c; --dim:#5c636e;
+    --acc:#6fb8ad; --accTxt:#0d2421; --use:#d99a62; --gain:#72bf8b; --warn:#d6b25e; --bad:#d4746d;
   }
-  *{box-sizing:border-box}
+  :root[data-theme="night"]{
+    --bg:#000; --s1:#0a0a09; --s2:#121110; --line:#1c1a18;
+    --txt:#b7a693; --mut:#7a6d60; --dim:#4f463d;
+    --acc:#a7845a; --accTxt:#1a1208; --use:#a7845a; --gain:#7f9a68; --warn:#b08d4a; --bad:#a85e4f;
+  }
+  :root[data-theme="light"]{
+    --bg:#f2f3f5; --s1:#ffffff; --s2:#eef0f3; --line:#e2e5ea;
+    --txt:#1e2328; --mut:#68707c; --dim:#9aa1ab;
+    --acc:#2f8b7f; --accTxt:#fff; --use:#c27a3c; --gain:#3c9a5d; --warn:#b48a1f; --bad:#c0524a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-  body{padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 24px)}
-  header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
-  h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
-  .status{font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:6px}
-  .dot{width:8px;height:8px;border-radius:50%;background:#555}
-  .dot.on{background:var(--neg);box-shadow:0 0 8px var(--neg)}
-  .dot.busy{background:var(--warn)}
-  .btns{display:flex;gap:8px;margin-bottom:14px}
-  button{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:12px;padding:12px 14px;background:var(--acc);color:#04201f;flex:1;cursor:pointer}
-  button.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
-  button:disabled{opacity:.45}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
-  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--mut);margin:0 0 10px;font-weight:600}
-  .hero{display:flex;align-items:center;gap:16px}
-  .ring{position:relative;width:132px;height:132px;flex:none}
-  .ring svg{transform:rotate(-90deg)}
-  .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .ring .big{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
-  .ring .sm{font-size:11.5px;color:var(--mut)}
-  .herosub{flex:1;display:grid;gap:8px}
-  .kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}
-  .kv span:first-child{color:var(--mut)}
-  .kv b{font-variant-numeric:tabular-nums;font-weight:600}
-  .pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--mut);margin-right:6px;margin-top:4px}
-  .pill.on{color:#04201f;background:var(--neg);border-color:var(--neg)}
-  .power{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;margin:2px 0}
-  .power small{font-size:16px;color:var(--mut);font-weight:500}
-  .bar{height:10px;background:var(--card2);border-radius:6px;position:relative;overflow:hidden;margin:8px 0 4px}
-  .bar i{position:absolute;top:0;bottom:0;border-radius:6px}
-  .bar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--mut);opacity:.5}
-  .plab{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+  body{padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 86px);transition:background .3s,color .3s}
+  .num{font-variant-numeric:tabular-nums}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.1px;display:flex;align-items:center;gap:7px}
+  .ver{font-size:10.5px;font-weight:700;color:var(--accTxt);background:var(--acc);border-radius:6px;padding:2px 6px}
+  .status{font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:7px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .dot.on{background:var(--gain)} .dot.busy{background:var(--warn)}
+  .iconbtn{all:unset;cursor:pointer;width:34px;height:34px;border-radius:10px;background:var(--s1);display:flex;align-items:center;justify-content:center;color:var(--mut)}
+  .iconbtn svg{width:18px;height:18px}
+  button{font:inherit;cursor:pointer}
+  .btn{border:0;border-radius:14px;padding:14px 16px;font-size:15.5px;font-weight:600;background:var(--acc);color:var(--accTxt);width:100%}
+  .btn.sec{background:var(--s2);color:var(--txt)}
+  .btn.small{width:auto;padding:9px 14px;font-size:13.5px;border-radius:11px}
+  .row{display:flex;gap:10px}
+  .card{background:var(--s1);border-radius:18px;padding:16px;margin-bottom:12px}
+  .label{font-size:12px;color:var(--mut);letter-spacing:.3px}
+  h2{font-size:13px;font-weight:600;color:var(--mut);margin:0 0 12px;letter-spacing:.3px}
+  .note{font-size:12.5px;color:var(--mut);line-height:1.5}
+  .banner{display:none;border-radius:14px;padding:11px 13px;margin-bottom:12px;font-size:13.5px;line-height:1.4;align-items:center;justify-content:space-between;gap:10px}
+  .banner.info{background:var(--s1);border:1px solid var(--acc)}
+  .banner.err{background:color-mix(in srgb,var(--bad) 14%,var(--bg));color:var(--txt);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent)}
+  .tab{display:none} .tab.active{display:block}
+
+  /* drive */
+  .hero{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+  .ring{position:relative;width:min(64vw,240px);aspect-ratio:1}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .soc{font-size:clamp(52px,16vw,72px);font-weight:300;letter-spacing:-2px;line-height:1}
+  .soc small{font-size:.38em;font-weight:400;letter-spacing:0;color:var(--mut);margin-left:2px}
+  .sub1{font-size:15px;color:var(--mut);margin-top:8px}
+  .range{font-size:22px;font-weight:500;margin-top:14px;text-align:center}
+  .range span{color:var(--mut);font-size:14px;font-weight:400}
+  .pw{margin-top:4px}
+  .pwtop{display:flex;justify-content:space-between;align-items:baseline}
+  .pwval{font-size:34px;font-weight:300;letter-spacing:-.5px}
+  .pwval small{font-size:15px;color:var(--mut);margin-left:3px}
+  .pwtag{font-size:13px;color:var(--mut)}
+  .gauge{position:relative;height:12px;border-radius:7px;background:var(--s2);margin:12px 0 6px;overflow:hidden}
+  .gauge i{position:absolute;top:0;bottom:0;border-radius:7px;transition:all .5s}
+  .gauge .z{position:absolute;top:0;bottom:0;width:2px;background:var(--dim)}
+  .glab{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .chip{background:var(--s1);border-radius:16px;padding:12px 10px;text-align:center}
+  .chip .v{font-size:21px;font-weight:500}
+  .chip .v small{font-size:12px;color:var(--mut);font-weight:400}
+  .chip .l{font-size:11.5px;color:var(--mut);margin-top:3px}
+  .alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .alert{display:flex;gap:10px;align-items:center;background:var(--s1);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.35}
+  .alert b{font-weight:600}
+  .alert .ic{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg)}
+  .ok .ic{background:var(--gain)} .warn .ic{background:var(--warn)} .bad .ic{background:var(--bad)}
+  .chg .big{font-size:44px;font-weight:300;text-align:center;letter-spacing:-1px}
+  .chg .big small{font-size:16px;color:var(--mut)}
+
+  /* generic tiles */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .tile{background:var(--card2);border-radius:12px;padding:10px 11px}
+  .tile{background:var(--s2);border-radius:14px;padding:11px 12px}
   .tile .l{font-size:11.5px;color:var(--mut)}
-  .tile .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
-  .tile .v small{font-size:12px;color:var(--mut);font-weight:500}
-  .verdict{display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px}
-  .verdict .badge{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
-  .verdict .t1{font-size:17px;font-weight:650}
-  .verdict .t2{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.35}
-  .cgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:10px}
-  .cgrid button{all:unset;box-sizing:border-box;border-radius:7px;padding:5px 0 4px;text-align:center;cursor:pointer;background:#1e2a2a;border:1.5px solid transparent}
-  .cgrid button .n{display:block;font-size:9px;color:rgba(255,255,255,.55)}
-  .cgrid button .d{display:block;font-size:11.5px;font-weight:650;font-variant-numeric:tabular-nums;color:#fff}
-  .cgrid button.sel{border-color:#fff}
-  .cgrid button.na{opacity:.25}
-  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:10px}
-  .legend span{display:inline-flex;align-items:center;gap:5px}
-  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
-  .cinfo{background:var(--card2);border-radius:10px;padding:9px 11px;margin-top:10px;font-size:13px;min-height:20px}
-  .trow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
-  .trow:last-child{border-bottom:0}
-  .trow .a{color:var(--mut);font-size:11.5px}
-  .trow .b{text-align:right;font-variant-numeric:tabular-nums}
-  .trow .b b{font-size:15px}
-  .weak{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-  .weak span{background:#3a1f22;color:#ffb3b3;border-radius:8px;padding:5px 9px;font-size:12.5px}
-  .sub{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:16px 0 6px;font-weight:600}
-  .link{all:unset;color:var(--acc);font-size:13px;cursor:pointer;margin-top:10px;display:inline-block}
-  .ptabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .ptile{background:var(--card2);border-radius:12px;padding:10px 11px}
-  .ptile .l{font-size:11.5px;color:var(--mut)}
-  .ptile .km{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
-  .ptile .km small{font-size:12px;color:var(--mut);font-weight:500}
-  .ptile .k2{font-size:12px;color:var(--mut);margin-top:2px;font-variant-numeric:tabular-nums}
-  table.mt{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;margin-top:6px}
-  table.mt th{color:var(--mut);font-weight:500;text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
-  table.mt th:first-child,table.mt td:first-child{text-align:left}
-  table.mt td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
-  .sync{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut)}
-  .sync button{flex:none;font-size:13px;padding:8px 12px}
-  .temps{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:8px}
-  .temps div{background:var(--card2);border-radius:8px;text-align:center;padding:6px 0;font-size:13px;font-variant-numeric:tabular-nums}
+  .tile .v{font-size:20px;font-weight:500;margin-top:3px}
+  .tile .v small{font-size:12px;color:var(--mut);font-weight:400}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv span{color:var(--mut)} .kv b{font-weight:500}
+  .temps{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px}
+  .temps div{background:var(--s2);border-radius:10px;text-align:center;padding:7px 0;font-size:13.5px}
   .temps div small{display:block;font-size:9.5px;color:var(--mut)}
-  .note{font-size:12.5px;color:var(--mut);line-height:1.45}
-  .err{background:#2a1517;border:1px solid #5a2328;color:#ffb3b3;border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:12px;display:none;line-height:1.4}
-  details summary{cursor:pointer;color:var(--mut);font-size:13px}
-  pre{white-space:pre-wrap;word-break:break-all;font-size:10.5px;color:#9fb0c4;max-height:260px;overflow:auto;background:#0a0d12;border-radius:10px;padding:8px;margin:8px 0}
-  .ver{font-size:11px;font-weight:600;color:#04201f;background:var(--acc);border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:middle}
-  .newver{display:none;background:#123a36;border:1px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:13.5px;align-items:center;justify-content:space-between;gap:10px}
-  .newver button{flex:none;font-size:13px;padding:8px 12px}
-  .upd{font-size:11.5px;color:var(--mut);text-align:center;margin:-4px 0 12px}
+  .verdict{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .verdict .badge{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;flex:none;color:var(--bg)}
+  .verdict .t1{font-size:16px;font-weight:600}
+  .verdict .t2{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.4}
+  .cgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:12px}
+  .cgrid button{all:unset;box-sizing:border-box;border-radius:8px;padding:6px 0 5px;text-align:center;cursor:pointer;border:1.5px solid transparent}
+  .cgrid .n{display:block;font-size:9px;opacity:.65}
+  .cgrid .d{display:block;font-size:11.5px;font-weight:600}
+  .cgrid button.sel{border-color:var(--txt)}
+  .c0{background:color-mix(in srgb,var(--gain) 22%,var(--s2))} .c1{background:color-mix(in srgb,var(--warn) 40%,var(--s2))} .c2{background:color-mix(in srgb,var(--bad) 55%,var(--s2))} .cn{background:var(--s2);opacity:.4}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:10px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+  .cinfo{background:var(--s2);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}
+  .weak{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .weak span{background:color-mix(in srgb,var(--bad) 22%,var(--s2));border-radius:9px;padding:5px 9px;font-size:12.5px}
+  .sub{font-size:12px;color:var(--mut);margin:18px 0 8px;font-weight:600;letter-spacing:.3px}
+
+  /* stats */
+  .ptabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ptile{background:var(--s1);border-radius:16px;padding:13px}
+  .ptile .l{font-size:12px;color:var(--mut)}
+  .ptile .km{font-size:26px;font-weight:400;margin-top:4px}
+  .ptile .km small{font-size:13px;color:var(--mut)}
+  .ptile .k2{font-size:12px;color:var(--mut);margin-top:3px}
+  table.mt{width:100%;border-collapse:collapse;font-size:13px}
+  table.mt th{color:var(--mut);font-weight:500;text-align:right;padding:7px 4px;border-bottom:1px solid var(--line);font-size:11.5px}
+  table.mt th:first-child,table.mt td:first-child{text-align:left}
+  table.mt td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line)}
+  table.mt tr:last-child td{border-bottom:0}
+  .trow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .trow:last-child{border-bottom:0}
+  .trow .a{color:var(--mut);font-size:12px;margin-top:2px}
+  .trow .b{text-align:right}
+  .link{all:unset;color:var(--acc);font-size:13.5px;cursor:pointer;padding:8px 0;display:inline-block;margin-right:16px}
+
+  /* settings */
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--s2);border-radius:12px;padding:3px;gap:3px}
+  .seg button{all:unset;text-align:center;padding:9px 0;border-radius:9px;font-size:13.5px;cursor:pointer;color:var(--mut)}
+  .seg button.on{background:var(--s1);color:var(--txt);font-weight:600}
+  .sw{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;gap:12px}
+  .sw:last-child{border-bottom:0}
+  .sw .d{font-size:12px;color:var(--mut);margin-top:2px}
+  .toggle{all:unset;flex:none;width:46px;height:28px;border-radius:14px;background:var(--s2);position:relative;cursor:pointer;transition:background .2s}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--mut);transition:all .2s}
+  .toggle.on{background:var(--acc)} .toggle.on::after{left:21px;background:var(--accTxt)}
+  pre{white-space:pre-wrap;word-break:break-all;font-size:10.5px;color:var(--mut);max-height:260px;overflow:auto;background:var(--s2);border-radius:10px;padding:8px;margin:8px 0}
+  details summary{cursor:pointer;color:var(--mut);font-size:13.5px}
+
+  /* tab bar */
+  nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:5}
+  nav button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:var(--dim);font-size:11px;font-weight:500}
+  nav button svg{width:23px;height:23px}
+  nav button.on{color:var(--acc)}
 </style>
 </head>
 <body>
 <header>
-  <h1>Ioniq Monitorius<span class="ver" id="ver"></span></h1>
-  <div class="status"><span class="dot" id="dot"></span><span id="stat">Neprisijungta</span></div>
+  <h1>Ioniq<span class="ver" id="ver"></span></h1>
+  <div class="row" style="align-items:center;gap:10px">
+    <div class="status"><span class="dot" id="dot"></span><span id="stat">Neprisijungta</span></div>
+    <button class="iconbtn" id="btnTheme" title="Tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
 </header>
 
-<div class="newver" id="newver"><span id="newverTxt">Yra nauja versija</span><button id="btnUpdate">Atnaujinti</button></div>
-<div class="err" id="err"></div>
+<div class="banner info" id="newver"><span id="newverTxt">Yra nauja versija</span><button class="btn small" id="btnUpdate">Atnaujinti</button></div>
+<div class="banner err" id="err"></div>
 
-<div class="btns">
-  <button id="btnConn">Prisijungti prie OBD</button>
-  <button class="sec" id="btnDemo">Demo</button>
-</div>
-<div class="upd" id="upd"></div>
+<!-- ============ DRIVE ============ -->
+<section class="tab" id="tab-drive">
+  <div class="row" id="connRow" style="margin-bottom:12px">
+    <button class="btn" id="btnConn">Prisijungti prie automobilio</button>
+    <button class="btn sec" id="btnDemo" style="width:96px;flex:none">Demo</button>
+  </div>
 
-<div class="card">
-  <h2>Baterija</h2>
-  <div class="hero">
+  <div class="card hero">
     <div class="ring">
-      <svg width="132" height="132" viewBox="0 0 132 132">
-        <circle cx="66" cy="66" r="56" fill="none" stroke="#1b212b" stroke-width="12"/>
-        <circle id="ringArc" cx="66" cy="66" r="56" fill="none" stroke="#3fd0c9" stroke-width="12" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"/>
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="var(--s2)" stroke-width="10"/>
+        <circle id="ringArc" cx="100" cy="100" r="88" fill="none" stroke="var(--acc)" stroke-width="10" stroke-linecap="round" stroke-dasharray="552.9" stroke-dashoffset="552.9" style="transition:stroke-dashoffset .8s,stroke .5s"/>
       </svg>
-      <div class="val"><div class="big" id="soc">–</div><div class="sm">įkrova (ekrane)</div></div>
+      <div class="c">
+        <div class="soc num" id="soc">–</div>
+        <div class="sub1 num" id="kwhLeft">Įkrova</div>
+      </div>
     </div>
-    <div class="herosub">
-      <div class="kv"><span>SOC (BMS)</span><b id="socBms">–</b></div>
-      <div class="kv"><span>Liko energijos</span><b id="kwhLeft">–</b></div>
-      <div class="kv"><span>Nuvažiuosite</span><b id="range">–</b></div>
-      <div class="kv"><span>Būklė (SOH)</span><b id="soh">–</b></div>
-      <div class="kv"><span>12 V akum.</span><b id="aux">–</b></div>
+    <div class="range num" id="range">– <span>km liko</span></div>
+  </div>
+
+  <div class="card chg" id="chgCard" style="display:none">
+    <h2>⚡ Kraunama</h2>
+    <div class="big num" id="chgPwr">– <small>kW</small></div>
+    <div class="grid" style="margin-top:12px">
+      <div class="tile"><div class="l">Įkrauta šįkart</div><div class="v num" id="chgAdded">–</div></div>
+      <div class="tile"><div class="l">Pradėta nuo</div><div class="v num" id="chgFrom">–</div></div>
+      <div class="tile"><div class="l">Iki 80 %</div><div class="v num" id="chgT80">–</div></div>
+      <div class="tile"><div class="l">Iki 100 %</div><div class="v num" id="chgT100">–</div></div>
+    </div>
+    <div class="note" style="margin-top:10px">Laikas apytikslis pagal dabartinę galią. Virš ~75 % greitasis krovimas lėtėja.</div>
+  </div>
+
+  <div class="card pw" id="pwCard">
+    <div class="pwtop"><div class="pwval num" id="pwr">– <small>kW</small></div><div class="pwtag" id="pwTag"></div></div>
+    <div class="gauge"><span class="z" style="left:33.3%"></span><i id="pbar"></i></div>
+    <div class="glab"><span>−50</span><span>0</span><span>+100 kW</span></div>
+  </div>
+
+  <div class="chips" style="margin-bottom:12px">
+    <div class="chip"><div class="v num" id="tripKm">–</div><div class="l">Kelionė, km</div></div>
+    <div class="chip"><div class="v num" id="tripCons">–</div><div class="l">kWh/100 km</div></div>
+    <div class="chip"><div class="v num" id="battT">–</div><div class="l">Baterija</div></div>
+  </div>
+
+  <div class="alerts" id="alerts"></div>
+</section>
+
+<!-- ============ BATTERY ============ -->
+<section class="tab" id="tab-battery">
+  <div class="card">
+    <h2>Būklė</h2>
+    <div class="grid">
+      <div class="tile"><div class="l">Baterijos sveikata (SOH)</div><div class="v num" id="soh">–</div></div>
+      <div class="tile"><div class="l">12 V akumuliatorius</div><div class="v num" id="aux">–</div></div>
+      <div class="tile"><div class="l">Įtampa</div><div class="v num" id="volt">–</div></div>
+      <div class="tile"><div class="l">Srovė</div><div class="v num" id="amp">–</div></div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="kv"><span>SOC (BMS)</span><b class="num" id="socBms">–</b></div>
+      <div class="kv"><span>Maks. galia / atgavimas</span><b class="num" id="maxPR">–</b></div>
+      <div class="kv"><span>Būsena</span><b id="flags">–</b></div>
     </div>
   </div>
-  <div id="flags" style="margin-top:10px"></div>
-</div>
 
-<div class="card" id="chgCard" style="display:none;border-color:#2d6a4f">
-  <h2>⚡ Krovimas</h2>
-  <div class="power" id="chgPwr">– <small>kW</small></div>
-  <div class="grid" style="margin-top:8px">
-    <div class="tile"><div class="l">Įkrauta šįkart</div><div class="v" id="chgAdded">– <small>kWh</small></div></div>
-    <div class="tile"><div class="l">Pradėta nuo</div><div class="v" id="chgFrom">– <small>%</small></div></div>
-    <div class="tile"><div class="l">Iki 80 %</div><div class="v" id="chgT80">–</div></div>
-    <div class="tile"><div class="l">Iki 100 %</div><div class="v" id="chgT100">–</div></div>
+  <div class="card">
+    <h2>Temperatūros</h2>
+    <div class="kv"><span>Baterija min / maks</span><b class="num" id="tMinMax">–</b></div>
+    <div class="kv"><span>Įleidžiamo oro</span><b class="num" id="tInlet">–</b></div>
+    <div class="temps num" id="temps"></div>
   </div>
-  <div class="note" style="margin-top:8px">Laikas apytikslis – skaičiuojamas pagal dabartinę galią. Greitasis krovimas virš ~75 % lėtėja, todėl iki 100 % gali užtrukti ilgiau.</div>
-</div>
 
-<div class="card">
-  <h2>Galia</h2>
-  <div class="power" id="pwr">– <small>kW</small></div>
-  <div class="bar"><span class="mid"></span><i id="pbar"></i></div>
-  <div class="plab"><span>◀ atgavimas / krovimas</span><span>naudojimas ▶</span></div>
-  <div class="grid" style="margin-top:12px">
-    <div class="tile"><div class="l">Įtampa</div><div class="v" id="volt">– <small>V</small></div></div>
-    <div class="tile"><div class="l">Srovė</div><div class="v" id="amp">– <small>A</small></div></div>
-    <div class="tile"><div class="l">Maks. atgavimas</div><div class="v" id="maxReg">– <small>kW</small></div></div>
-    <div class="tile"><div class="l">Maks. galia</div><div class="v" id="maxPwr">– <small>kW</small></div></div>
+  <div class="card">
+    <h2>Elementai (96)</h2>
+    <div class="verdict">
+      <div class="badge" id="cBadge" style="background:var(--dim)">?</div>
+      <div><div class="t1" id="cVerdict">Laukiama duomenų</div><div class="t2" id="cVerdictSub">Parodys, ar visi 96 elementai įsikrovę vienodai.</div></div>
+    </div>
+    <div class="grid">
+      <div class="tile"><div class="l">Silpniausias</div><div class="v num" id="cMin">–</div></div>
+      <div class="tile"><div class="l">Stipriausias</div><div class="v num" id="cMax">–</div></div>
+      <div class="tile"><div class="l">Vidurkis</div><div class="v num" id="cAvg">–</div></div>
+      <div class="tile"><div class="l">Skirtumas</div><div class="v num" id="cDiff">–</div></div>
+    </div>
+    <div class="cgrid num" id="cells"></div>
+    <div class="legend"><span><i class="c0"></i>iki ±30 mV</span><span><i class="c1"></i>±30–50 mV</span><span><i class="c2"></i>&gt; ±50 mV</span></div>
+    <div class="cinfo" id="cInfo">Langelyje – elemento nr. ir nuokrypis nuo vidurkio (mV). Paspauskite langelį.</div>
+    <div class="note" style="margin-top:8px">Atnaujinama kas ~30 s. Matavimo tikslumas 20 mV.</div>
+    <div class="sub">ISTORIJA</div>
+    <div class="note" id="cHistInfo"></div>
+    <div id="cHistWeak"></div>
+    <div id="cHistChart" style="margin-top:8px"></div>
   </div>
-</div>
 
-<div class="card">
-  <h2>Ši sesija</h2>
-  <div class="grid">
-    <div class="tile"><div class="l">Sunaudota</div><div class="v" id="sesUsed">– <small>kWh</small></div></div>
-    <div class="tile"><div class="l">Atgauta / įkrauta</div><div class="v" id="sesRegen">– <small>kWh</small></div></div>
-    <div class="tile"><div class="l">Nuvažiuota</div><div class="v" id="sesKm">– <small>km</small></div></div>
-    <div class="tile"><div class="l">Sąnaudos</div><div class="v" id="sesCons">– <small>kWh/100</small></div></div>
+  <div class="card">
+    <h2>Per visą laiką</h2>
+    <div class="kv"><span>Įkrauta</span><b class="num" id="cec">–</b></div>
+    <div class="kv"><span>Sunaudota</span><b class="num" id="ced">–</b></div>
+    <div class="kv"><span>Rida</span><b class="num" id="odo">–</b></div>
+    <div class="kv"><span>BMS veikimo laikas</span><b class="num" id="opt">–</b></div>
+    <div class="kv"><span>SOH istorija</span><b class="num" id="sohHist">–</b></div>
   </div>
-</div>
+</section>
 
-<div class="card">
-  <h2>Važiavimo statistika</h2>
-  <div class="ptabs" id="periods"></div>
-  <div class="sub">Pagal mėnesius</div>
-  <div id="months"></div>
-  <div class="sub">Google Sheets</div>
-  <div class="sync"><span id="syncInfo">Neprijungta</span><button class="sec" id="btnSync">Siųsti dabar</button></div>
-</div>
+<!-- ============ STATS ============ -->
+<section class="tab" id="tab-stats">
+  <div class="ptabs num" id="periods" style="margin-bottom:12px"></div>
+  <div class="card">
+    <h2>Pagal mėnesius</h2>
+    <div id="months" class="num"></div>
+  </div>
+  <div class="card">
+    <h2>Kelionės</h2>
+    <div class="grid" style="margin-bottom:6px">
+      <div class="tile"><div class="l">Vid. sąnaudos (20 kel.)</div><div class="v num" id="avgCons">–</div></div>
+      <div class="tile"><div class="l">Įrašyta kelionių</div><div class="v num" id="tripCount">0</div></div>
+    </div>
+    <div id="trips" class="num"></div>
+    <button class="link" id="btnMoreTrips" style="display:none">Rodyti daugiau</button>
+    <button class="link" id="btnClearTrips">Išvalyti kelionių istoriją</button>
+  </div>
+</section>
 
-<div class="card">
-  <h2>Kelionių istorija</h2>
-  <div class="grid">
-    <div class="tile"><div class="l">Vid. sąnaudos (20 kel.)</div><div class="v" id="avgCons">– <small>kWh/100</small></div></div>
-    <div class="tile"><div class="l">Įrašyta kelionių</div><div class="v" id="tripCount">0</div></div>
+<!-- ============ MORE ============ -->
+<section class="tab" id="tab-more">
+  <div class="card">
+    <h2>Ekranas</h2>
+    <div class="seg" id="themeSeg">
+      <button data-t="dark">Tamsi</button><button data-t="night">Naktinė</button><button data-t="light">Šviesi</button>
+    </div>
+    <div class="note" style="margin-top:8px">Naktinė tema – šilti, prigesinti tonai be ryškios mėlynos šviesos, kad tamsoje nevargintų akių.</div>
+    <div style="margin-top:6px">
+      <div class="sw"><div>Automatinė naktinė tema<div class="d">Nuo 20:00 iki 7:00</div></div><button class="toggle" data-k="autoNight"></button></div>
+      <div class="sw"><div>Neleisti ekranui užgesti<div class="d">Kai prisijungta prie automobilio</div></div><button class="toggle" data-k="keepAwake"></button></div>
+      <div class="sw"><div>Jungtis automatiškai iš naujo<div class="d">Kai ryšys nutrūksta ar automobilis vėl įjungiamas</div></div><button class="toggle" data-k="autoReconnect"></button></div>
+    </div>
   </div>
-  <div id="trips" style="margin-top:6px"></div>
-  <button class="link" id="btnMoreTrips" style="display:none;margin-right:16px">Rodyti daugiau</button>
-  <button class="link" id="btnClearTrips">Išvalyti kelionių istoriją</button>
-</div>
 
-<div class="card">
-  <h2>Temperatūros</h2>
-  <div class="grid">
-    <div class="tile"><div class="l">Baterija min / maks</div><div class="v" id="tMinMax">– <small>°C</small></div></div>
-    <div class="tile"><div class="l">Įleidimo oro</div><div class="v" id="tInlet">– <small>°C</small></div></div>
+  <div class="card">
+    <h2>Google Sheets</h2>
+    <div class="sw" style="border:0;padding-top:0"><div id="syncInfo">Neprijungta</div><button class="btn small sec" id="btnSync">Siųsti dabar</button></div>
   </div>
-  <div class="temps" id="temps"></div>
-</div>
 
-<div class="card">
-  <h2>Baterijos elementai (96)</h2>
-  <div class="verdict">
-    <div class="badge" id="cBadge" style="background:#2a313d">?</div>
-    <div><div class="t1" id="cVerdict">Laukiama duomenų</div><div class="t2" id="cVerdictSub">Elementų balansas parodys, ar visi 96 elementai įsikrovę vienodai.</div></div>
+  <div class="card">
+    <h2>Pagalba</h2>
+    <div class="note">
+      • Prieš jungiantis uždarykite ABRP – adapteris vienu metu dirba tik su viena programa.<br>
+      • iPhone telefone naudokite <b>Bluefy</b> naršyklę.<br>
+      • Sąraše pasirinkite <b>IOS-Vlink</b>.<br>
+      • Automobilis turi būti įjungtas (READY) arba kraunamas.
+    </div>
+    <details style="margin-top:12px">
+      <summary>Techninis žurnalas</summary>
+      <pre id="log"></pre>
+      <button class="btn sec small" id="btnCopy">Kopijuoti žurnalą</button>
+    </details>
   </div>
-  <div class="grid">
-    <div class="tile"><div class="l">Silpniausias</div><div class="v" id="cMin">– <small>V</small></div></div>
-    <div class="tile"><div class="l">Stipriausias</div><div class="v" id="cMax">– <small>V</small></div></div>
-    <div class="tile"><div class="l">Vidurkis</div><div class="v" id="cAvg">– <small>V</small></div></div>
-    <div class="tile"><div class="l">Skirtumas</div><div class="v" id="cDiff">– <small>mV</small></div></div>
-  </div>
-  <div class="cgrid" id="cells"></div>
-  <div class="legend">
-    <span><i style="background:#1f7a52"></i>prie vidurkio</span>
-    <span><i style="background:#8a6d1a"></i>±30–50 mV</span>
-    <span><i style="background:#8f2f2f"></i>daugiau nei ±50 mV</span>
-  </div>
-  <div class="cinfo" id="cInfo">Langelyje – elemento numeris ir nuokrypis nuo vidurkio (mV). Paspauskite langelį, kad pamatytumėte jo įtampą.</div>
-  <div class="note" style="margin-top:8px">Atnaujinama kas ~30 s. Automobilis matuoja 20 mV tikslumu, todėl nedideli 20 mV skirtumai yra normalūs.</div>
-  <div class="sub">Elementų istorija</div>
-  <div class="note" id="cHistInfo">Kol kas matavimų nėra.</div>
-  <div id="cHistWeak"></div>
-  <div id="cHistChart" style="margin-top:8px"></div>
-</div>
+</section>
 
-<div class="card">
-  <h2>Per visą laiką</h2>
-  <div class="grid">
-    <div class="tile"><div class="l">Įkrauta</div><div class="v" id="cec">– <small>kWh</small></div></div>
-    <div class="tile"><div class="l">Sunaudota</div><div class="v" id="ced">– <small>kWh</small></div></div>
-    <div class="tile"><div class="l">Rida</div><div class="v" id="odo">– <small>km</small></div></div>
-    <div class="tile"><div class="l">BMS veikimo laikas</div><div class="v" id="opt">– <small>val.</small></div></div>
-  </div>
-  <div class="kv" style="margin-top:10px"><span>SOH istorija</span><b id="sohHist">–</b></div>
-</div>
-
-<div class="card">
-  <h2>Pagalba</h2>
-  <div class="note">
-    • Prieš jungiantis <b>uždarykite ABRP</b> (ar kitą OBD programėlę) – adapteris vienu metu dirba tik su viena programa.<br>
-    • iPhone telefone šį puslapį atidarykite <b>Bluefy</b> naršyklėje (Safari Bluetooth nepalaiko).<br>
-    • Sąraše pasirinkite įrenginį, dažniausiai vadinamą <b>IOS-Vlink</b>.<br>
-    • Automobilis turi būti įjungtas (READY) arba kraunamas, kitaip BMS gali neatsakyti.
-  </div>
-  <details style="margin-top:10px">
-    <summary>Techninis žurnalas</summary>
-    <pre id="log"></pre>
-    <button class="sec" id="btnCopy" style="width:100%">Kopijuoti žurnalą</button>
-  </details>
-</div>
+<nav id="nav">
+  <button data-tab="drive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4"/><path d="M3.5 18a9 9 0 1 1 17 0"/></svg>Vairuoti</button>
+  <button data-tab="battery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2"/><path d="M7 10v4M10.5 10v4"/></svg>Baterija</button>
+  <button data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistika</button>
+  <button data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Daugiau</button>
+</nav>
 
 <script>
 (() => {
-  // ---------- BLE UUIDs used by common ELM327 BLE adapters (Vgate iCar Pro first) ----------
+  const APP_VERSION = 7, APP_DATE = '2026-11-01';
+  const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
     ...['fff0','ffe0','18f0','ffb0','fee7'].map(x=>'0000'+x+'-0000-1000-8000-00805f9b34fb'),
     '49535343-fe7d-4ae5-8fa9-9fafd205e455'
   ];
-  const errText = e => { try{ if (!e) return 'nežinoma klaida'; if (typeof e==='string') return e; const t=[e.name,e.message].filter(Boolean).join(': '); return t || JSON.stringify(e) || String(e); }catch(_){ return String(e); } };
-  const APP_VERSION = 6, APP_DATE = '2026-11-01';
-  const USABLE_KWH = 28; // Ioniq Electric 2017-2019
-
   const $ = id => document.getElementById(id);
+  const errText = e => { try{ if (!e) return 'nežinoma klaida'; if (typeof e==='string') return e; const t=[e.name,e.message].filter(Boolean).join(': '); return t || JSON.stringify(e) || String(e); }catch(_){ return String(e); } };
+  const LS = {
+    get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } },
+    set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+
+  // ---------- log & status ----------
   const logLines = [];
   function log(s){
     const t = new Date().toLocaleTimeString('lt-LT');
     logLines.push(t+'  '+s); if (logLines.length>300) logLines.shift();
     const el=$('log'); el.textContent = logLines.join('\n'); el.scrollTop = el.scrollHeight;
   }
-  function showErr(msg){ const e=$('err'); if(!msg){e.style.display='none';return;} e.textContent=msg; e.style.display='block'; }
+  function showErr(msg){ const e=$('err'); if(!msg){e.style.display='none';return;} e.textContent=msg; e.style.display='flex'; }
   function setStatus(txt, cls){ $('stat').textContent=txt; $('dot').className='dot '+(cls||''); }
+
+  // ---------- settings & theme ----------
+  const SET = Object.assign({ theme:'dark', autoNight:false, keepAwake:true, autoReconnect:true, tab:'drive' }, LS.get('ioniqSettings', {}));
+  function saveSet(){ LS.set('ioniqSettings', SET); }
+  function effectiveTheme(){ if (SET.autoNight){ const h=new Date().getHours(); if (h>=20 || h<7) return 'night'; } return SET.theme; }
+  function applyTheme(){
+    const t = effectiveTheme(); document.documentElement.dataset.theme = t;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    document.querySelector('meta[name=theme-color]').setAttribute('content', bg);
+    document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on', b.dataset.t===SET.theme));
+  }
+  document.querySelectorAll('#themeSeg button').forEach(b=>b.onclick=()=>{ SET.theme=b.dataset.t; saveSet(); applyTheme(); });
+  $('btnTheme').onclick = () => { const order=['dark','night','light']; SET.theme = order[(order.indexOf(SET.theme)+1)%3]; SET.autoNight=false; saveSet(); applyTheme(); syncToggles(); };
+  function syncToggles(){ document.querySelectorAll('.toggle').forEach(t=>t.classList.toggle('on', !!SET[t.dataset.k])); }
+  document.querySelectorAll('.toggle').forEach(t=>t.onclick=()=>{ SET[t.dataset.k]=!SET[t.dataset.k]; saveSet(); syncToggles(); applyTheme(); if (t.dataset.k==='keepAwake') wake(); });
+  setInterval(applyTheme, 60e3);
+
+  // ---------- tabs ----------
+  function showTab(name){
+    document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
+    SET.tab=name; saveSet(); window.scrollTo(0,0);
+  }
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 
   // ---------- state ----------
   let device=null, rxChar=null, txChar=null, writeNoResp=false;
   let rx='', pending=null, chain=Promise.resolve();
-  let running=false, demoTimer=null;
+  let running=false, demoTimer=null, manualStop=false, reconnectTimer=null, wakeLock=null;
   const S = {}; // latest values
-  let session = null; // {ced0, cec0, odo0}
-
+  let session = null;
   const enc = new TextEncoder(), dec = new TextDecoder();
+
+  async function wake(){
+    try{
+      if (SET.keepAwake && running && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>wakeLock=null); }
+      if ((!SET.keepAwake || !running) && wakeLock){ await wakeLock.release(); wakeLock=null; }
+    }catch(e){}
+  }
+  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') wake(); });
 
   // ---------- low level ELM I/O ----------
   function onNotify(ev){
@@ -390,7 +501,6 @@
     }catch(e){}
     try{ await send('ATAR'); }catch(e){}
   }
-
   async function initElm(){
     setStatus('Inicializuojama…','busy');
     try{ await send('ATZ', 4000); }catch(e){}
@@ -398,42 +508,76 @@
     for (const c of ['ATE0','ATL0','ATS0','ATH0','ATAT1','ATSP6']) { try{ await send(c); }catch(e){} }
     curHeader='';
   }
-
   async function loop(){
-    let n=0;
+    let n=0, fails=0;
     while (running){
       const t0=Date.now();
       try{
         const ok = await query('7E4','2101','6101',dec2101);
-        if (n%4===0) await query('7E4','2105','6105',dec2105);
-        if (n%30===0){
-          await query('7E4','2102','6102',b=>decCells(b,0));
-          await query('7E4','2103','6103',b=>decCells(b,32));
-          await query('7E4','2104','6104',b=>decCells(b,64));
+        if (ok){
+          fails=0;
+          if (n%4===0) await query('7E4','2105','6105',dec2105);
+          if (n%30===0){
+            await query('7E4','2102','6102',b=>decCells(b,0));
+            await query('7E4','2103','6103',b=>decCells(b,32));
+            await query('7E4','2104','6104',b=>decCells(b,64));
+          }
+          if (n%15===0) await readOdo();
+          setStatus('Prisijungta','on'); showErr(''); S.t=Date.now(); track(); render(); save();
+          n++;
+        } else {
+          fails++;
+          setStatus(fails>3 ? 'Automobilis išjungtas' : 'Laukiama BMS…','busy');
+          if (fails===3) showErr('Adapteris prijungtas, bet automobilis neatsako. Įjunkite automobilį (READY) – programėlė prisijungs pati.');
         }
-        if (n%15===0) await readOdo();
-        if (ok){ setStatus('Prisijungta','on'); showErr(''); S.t=Date.now(); track(); render(); save(); }
-        else if (n<3) showErr('Adapteris atsako, bet baterijos valdiklis (BMS) – ne. Įjunkite automobilį (READY) ir palaukite.');
       }catch(e){
         if (!running) break;
         setStatus('Ryšio klaida','busy');
       }
-      n++;
-      const dt = Date.now()-t0; if (dt<1000) await new Promise(r=>setTimeout(r,1000-dt));
+      const wait = fails>3 ? 10000 : 1000;
+      const dt = Date.now()-t0; if (dt<wait) await new Promise(r=>setTimeout(r,wait-dt));
     }
   }
 
-  // ---------- connect ----------
+  // ---------- connect / reconnect ----------
+  async function openGatt(dev){
+    log('Jungiamasi prie '+(dev.name||'įrenginio')+'…');
+    const server = await dev.gatt.connect();
+    let svcs=[];
+    try{ svcs = await server.getPrimaryServices(); }catch(e){
+      for (const s of SERVICES){ try{ svcs.push(await server.getPrimaryService(s)); }catch(_){} }
+    }
+    for (const svc of svcs){
+      let chars=[]; try{ chars = await svc.getCharacteristics(); }catch(e){ continue; }
+      log('Paslauga '+svc.uuid+': '+chars.map(c=>c.uuid.slice(4,8)+'['+Object.keys(c.properties).filter(k=>c.properties[k]===true).join(',')+']').join(' '));
+      const nC = chars.find(c=>c.properties.notify||c.properties.indicate);
+      const wC = chars.find(c=>c.properties.write||c.properties.writeWithoutResponse);
+      if (nC && wC){
+        rxChar=nC; txChar=wC; writeNoResp = !wC.properties.write && wC.properties.writeWithoutResponse;
+        await rxChar.startNotifications();
+        rxChar.addEventListener('characteristicvaluechanged', onNotify);
+        rx=''; pending=null; chain=Promise.resolve();
+        return;
+      }
+    }
+    throw new Error('Nerasta OBD duomenų paslauga šiame įrenginyje.');
+  }
+  async function start(){
+    $('btnConn').textContent='Atsijungti';
+    await initElm();
+    running=true; manualStop=false; wake();
+    $('connRow').style.display = 'none';
+    loop();
+  }
   async function connect(){
     showErr('');
     if (!navigator.bluetooth){
-      showErr('Ši naršyklė nepalaiko Bluetooth. iPhone telefone įdiekite nemokamą „Bluefy – Web BLE Browser“ iš App Store ir atidarykite šį puslapį joje.');
+      showErr('Ši naršyklė nepalaiko Bluetooth. iPhone telefone atidarykite šį puslapį „Bluefy“ naršyklėje.');
       return;
     }
     stopDemo();
     try{
       setStatus('Ieškoma…','busy');
-      log('Ieškoma įrenginio…');
       try{
         device = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:SERVICES });
       }catch(e1){
@@ -445,152 +589,51 @@
       }
       log('Pasirinkta: '+(device.name||device.id));
       device.addEventListener('gattserverdisconnected', onDisconnected);
-      log('Jungiamasi prie GATT…');
-      const server = await device.gatt.connect();
-      log('GATT prisijungta');
-      let found=false;
-      let svcs=[];
-      try{ svcs = await server.getPrimaryServices(); }catch(e){
-        for (const s of SERVICES){ try{ svcs.push(await server.getPrimaryService(s)); }catch(_){} }
-      }
-      for (const svc of svcs){
-        let chars=[]; try{ chars = await svc.getCharacteristics(); }catch(e){ continue; }
-        log('Paslauga '+svc.uuid+': '+chars.map(c=>c.uuid.slice(4,8)+'['+Object.keys(c.properties).filter(k=>c.properties[k]===true).join(',')+']').join(' '));
-        const n = chars.find(c=>c.properties.notify||c.properties.indicate);
-        const w = chars.find(c=>c.properties.write||c.properties.writeWithoutResponse);
-        if (n && w){ rxChar=n; txChar=w; writeNoResp = !w.properties.write && w.properties.writeWithoutResponse; found=true; break; }
-      }
-      if (!found) throw new Error('Nerasta OBD duomenų paslauga šiame įrenginyje.');
-      await rxChar.startNotifications();
-      rxChar.addEventListener('characteristicvaluechanged', onNotify);
-      $('btnConn').textContent='Atsijungti';
-      await initElm();
-      running=true;
-      try{ if (navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){}
-      loop();
+      await openGatt(device);
+      await start();
     }catch(e){
       log('Klaida: '+errText(e));
       setStatus('Neprisijungta','');
-      if (!/cancel/i.test(errText(e))) showErr('Nepavyko prisijungti: '+errText(e)+'. Patikrinkite, ar ABRP uždaryta, ir bandykite dar kartą.');
+      if (!/cancel/i.test(errText(e))) showErr('Nepavyko prisijungti: '+errText(e)+'. Patikrinkite, ar ABRP uždaryta.');
       try{ device && device.gatt.connected && device.gatt.disconnect(); }catch(_){}
     }
   }
   function onDisconnected(){
-    running=false; trip=null; chg=null; log('Atsijungta'); syncSoon();
-    setStatus('Atsijungta',''); $('btnConn').textContent='Prisijungti prie OBD';
+    running=false; trip=null; chg=null; wake();
+    log('Atsijungta'); syncSoon();
+    if (!manualStop && SET.autoReconnect && device){ setStatus('Jungiamasi iš naujo…','busy'); scheduleReconnect(); }
+    else { setStatus('Atsijungta',''); $('btnConn').textContent='Prisijungti prie automobilio'; $('connRow').style.display=''; }
   }
-  function disconnect(){ running=false; trip=null; chg=null; try{ device.gatt.disconnect(); }catch(e){} }
-
-  // ---------- render ----------
-  const f = (v,d=1) => (v==null||isNaN(v)) ? '–' : v.toFixed(d);
-  function setV(id, v, unit){ $(id).innerHTML = v + (unit?' <small>'+unit+'</small>':''); }
-  function render(){
-    const soc = S.socDisp ?? S.socBms;
-    $('soc').textContent = soc==null ? '–' : Math.round(soc)+'%';
-    $('ringArc').style.strokeDashoffset = soc==null ? 351.86 : 351.86*(1-Math.min(100,soc)/100);
-    $('ringArc').style.stroke = soc==null ? '#3fd0c9' : soc<15 ? '#ff5d5d' : soc<30 ? '#ffcc4d' : '#3fd0c9';
-    $('socBms').textContent = S.socBms==null?'–':f(S.socBms,1)+' %';
-    const cap = USABLE_KWH*((S.soh ?? 100)/100);
-    $('kwhLeft').textContent = soc==null?'–':'~'+f(cap*soc/100,1)+' kWh';
-    $('soh').textContent = S.soh==null?'–':f(S.soh,1)+' %';
-    $('aux').textContent = S.aux==null?'–':f(S.aux,1)+' V';
-    $('flags').innerHTML =
-      `<span class="pill ${S.charging?'on':''}">${S.charging?'Kraunama':'Nekraunama'}</span>`+
-      `<span class="pill ${S.acPlug?'on':''}">AC laidas</span>`+
-      `<span class="pill ${S.dcPlug?'on':''}">CCS laidas</span>`+
-      `<span class="pill ${S.relay?'on':''}">Pagr. relė</span>`;
-
-    $('pwr').innerHTML = f(S.kw,1)+' <small>kW</small>';
-    const bar=$('pbar'), k=S.kw||0, pct=Math.min(50, Math.abs(k)/100*50);
-    bar.style.background = k>=0 ? 'var(--pos)' : 'var(--neg)';
-    bar.style.left = k>=0 ? '50%' : (50-pct)+'%'; bar.style.width = pct+'%';
-    setV('volt', f(S.volt,1), 'V'); setV('amp', f(S.amp,1), 'A');
-    setV('maxReg', f(S.maxReg,0), 'kW'); setV('maxPwr', f(S.maxPwr,0), 'kW');
-
-    if (S.ced!=null && !session) session = {ced0:S.ced, cec0:S.cec, odo0:S.odo};
-    if (session && session.odo0==null && S.odo!=null) session.odo0=S.odo;
-    if (session){
-      const used=S.ced-session.ced0, reg=S.cec-session.cec0;
-      setV('sesUsed', f(used,1),'kWh'); setV('sesRegen', f(reg,1),'kWh');
-      const km = (S.odo!=null && session.odo0!=null) ? S.odo-session.odo0 : null;
-      setV('sesKm', km==null?'–':f(km,0),'km');
-      setV('sesCons', (km && km>=1) ? f((used-reg)/km*100,1) : '–','kWh/100');
-    }
-
-    setV('tMinMax', (S.tMin==null?'–':S.tMin)+' / '+(S.tMax==null?'–':S.tMax),'°C');
-    setV('tInlet', S.tInlet==null?'–':S.tInlet,'°C');
-    $('temps').innerHTML = (S.temps||[]).map((t,i)=>`<div><small>M${i+1}</small>${t==null?'–':t+'°'}</div>`).join('');
-
-    renderCells();
-    renderExtras(soc, cap);
-
-    setV('cec', f(S.cec,0),'kWh'); setV('ced', f(S.ced,0),'kWh');
-    setV('odo', S.odo==null?'–':S.odo.toLocaleString('lt-LT'),'km');
-    setV('opt', f(S.opHours,0),'val.');
-    $('upd').textContent = S.t ? 'Atnaujinta '+new Date(S.t).toLocaleString('lt-LT') + ((running||demoTimer)?'':' (paskutiniai išsaugoti duomenys)') : '';
+  function scheduleReconnect(){
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(async ()=>{
+      if (manualStop || running) return;
+      try{ await openGatt(device); log('Prisijungta iš naujo'); await start(); }
+      catch(e){ log('Bandymas jungtis nepavyko: '+errText(e)); scheduleReconnect(); }
+    }, 5000);
+  }
+  function disconnect(){
+    manualStop=true; running=false; clearTimeout(reconnectTimer);
+    try{ device.gatt.disconnect(); }catch(e){}
+    setStatus('Atsijungta',''); $('btnConn').textContent='Prisijungti prie automobilio'; $('connRow').style.display='';
   }
 
-  // ---------- cells view ----------
-  let selCell = null;
-  function cellColor(dev){ const a=Math.abs(dev); return a<30 ? '#1f7a52' : a<=50 ? '#8a6d1a' : '#8f2f2f'; }
-  function renderCells(){
-    const cells = S.cells || [];
-    const vals = cells.filter(v=>v!=null);
-    let mn = S.cMin, mx = S.cMax, mnNo = S.cMinNo, mxNo = S.cMaxNo;
-    if (vals.length){
-      mn = Math.min(...vals); mx = Math.max(...vals);
-      mnNo = cells.indexOf(mn)+1; mxNo = cells.indexOf(mx)+1;
-    }
-    const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : (S.volt ? S.volt/96 : null);
-    setV('cMin', mn==null?'–':f(mn,2)+(mnNo?' <small>#'+mnNo+'</small>':''), 'V');
-    setV('cMax', mx==null?'–':f(mx,2)+(mxNo?' <small>#'+mxNo+'</small>':''), 'V');
-    setV('cAvg', avg==null?'–':f(avg,3), 'V');
-    const spread = (mn!=null && mx!=null) ? Math.round((mx-mn)*1000) : null;
-    setV('cDiff', spread==null?'–':spread, 'mV');
+  // ---------- helpers ----------
+  const f = (v,d=1) => (v==null||isNaN(v)) ? '–' : v.toFixed(d).replace('.', ',');
+  const u = (v,unit) => v + (unit ? ' <small>'+unit+'</small>' : '');
+  function setH(id, html){ const el=$(id); if (el) el.innerHTML = html; }
+  const pad = x => String(x).padStart(2,'0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const mondayOf = d => { const x=new Date(d); x.setHours(12); x.setDate(x.getDate()-((x.getDay()+6)%7)); return ymd(x); };
+  const stamp = ms => { const d=new Date(ms); return ymd(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
+  const MONTHS = ['saus.','vas.','kov.','bal.','geg.','birž.','liep.','rugp.','rugs.','spal.','lapkr.','gruod.'];
+  const fmtDur = h => (h==null||!isFinite(h)||h<0) ? '–' : h<1/60 ? 'dabar' : (h>=1 ? Math.floor(h)+' val. ' : '')+Math.round((h%1)*60)+' min';
 
-    // verdict
-    let icon='?', bg='#2a313d', t1='Laukiama duomenų', t2='Elementų balansas parodys, ar visi 96 elementai įsikrovę vienodai.';
-    if (spread!=null){
-      if (spread<=20){ icon='✓'; bg='#1f7a52'; t1='Puikus balansas'; t2='Visi elementai beveik vienodi. Baterija subalansuota.'; }
-      else if (spread<=40){ icon='✓'; bg='#2d6a4f'; t1='Geras balansas'; t2='Skirtumas nedidelis – tai normalu, ypač važiuojant ar kraunant.'; }
-      else if (spread<=80){ icon='!'; bg='#8a6d1a'; t1='Vidutinis balansas'; t2='Verta stebėti. Pilnas įkrovimas iki 100 % lėtu krovikliu padeda baterijai išsilyginti.'; }
-      else { icon='!'; bg='#8f2f2f'; t1='Didelis disbalansas'; t2='Elementas #'+mnNo+' gerokai atsilieka. Jei kartojasi ir ramybės būsenoje – verta patikrinti servise.'; }
-      if (S.amp!=null && Math.abs(S.amp)>20 && spread>20) t2 += ' Dabar teka didelė srovė, todėl skirtumai atrodo didesni.';
-    }
-    $('cBadge').textContent=icon; $('cBadge').style.background=bg; $('cVerdict').textContent=t1; $('cVerdictSub').textContent=t2;
-
-    // grid
-    const grid = $('cells');
-    if (!vals.length){
-      grid.innerHTML = Array.from({length:96},(_,i)=>`<button class="na"><span class="n">${i+1}</span><span class="d">–</span></button>`).join('');
-      return;
-    }
-    grid.innerHTML = cells.map((v,i)=>{
-      if (v==null) return `<button class="na" data-i="${i}"><span class="n">${i+1}</span><span class="d">–</span></button>`;
-      const dev = Math.round((v-avg)*1000);
-      const txt = Math.abs(dev)<10 ? '0' : (dev>0?'+':'')+dev;
-      return `<button data-i="${i}" class="${selCell===i?'sel':''}" style="background:${cellColor(dev)}"><span class="n">${i+1}</span><span class="d">${txt}</span></button>`;
-    }).join('');
-    if (selCell!=null) showCell(selCell, avg);
-  }
-  function showCell(i, avg){
-    const v = (S.cells||[])[i]; if (v==null) return;
-    const dev = Math.round((v-avg)*1000);
-    const word = Math.abs(dev)<30 ? 'tvarkoje' : Math.abs(dev)<=50 ? 'šiek tiek skiriasi' : (dev<0?'atsilieka':'aukštesnė už kitus');
-    $('cInfo').innerHTML = `<b>Elementas #${i+1}</b>: ${v.toFixed(2)} V · nuokrypis ${(dev>0?'+':'')+dev} mV nuo vidurkio – <b>${word}</b>.`;
-  }
-  document.addEventListener('click', ev=>{
-    const b = ev.target.closest && ev.target.closest('#cells button[data-i]'); if (!b) return;
-    selCell = +b.dataset.i; renderCells();
-  });
-
-  // ---------- history: trips, charging, cells, SOH ----------
-  const LS = {
-    get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v ?? d; }catch(e){ return d; } },
-    set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-  };
+  // ---------- history ----------
   let trip=null, chg=null, demoHist=null;
   const H = k => demoHist ? demoHist[k] : LS.get(k, []);
+  const thr = {};
+  function throttle(k, ms){ const n=Date.now(); if (!thr[k] || n-thr[k]>=ms){ thr[k]=n; return true; } return false; }
   function tripStats(t){
     const km = (t.odo1!=null && t.odo0!=null) ? t.odo1-t.odo0 : 0;
     const kwh = (t.ced1-t.ced0) - (t.cec1-t.cec0);
@@ -598,6 +641,7 @@
   }
   function track(){
     const soc = S.socDisp ?? S.socBms;
+    if (trip && Date.now()-(trip.t1||trip.t0) > 10*60e3) { trip=null; syncSoon(); } // long pause -> new trip
     if (S.charging){
       if (trip) { trip=null; syncSoon(); }
       if (!chg) chg = { id:Date.now(), t0:Date.now(), cec0:S.cec, soc0:soc };
@@ -618,7 +662,6 @@
         }
       }
     }
-    // cell snapshot: only at rest, max every 10 min
     const c = S.cells;
     if (c && c.length===96 && c.every(v=>v!=null) && (S.amp==null || Math.abs(S.amp)<15)){
       const h = LS.get('ioniqCellHist',[]);
@@ -629,83 +672,169 @@
         LS.set('ioniqCellHist', h.slice(0,300));
       }
     }
-    // SOH: one value per day
     if (S.soh!=null){
-      const d = new Date().toISOString().slice(0,10), sh = LS.get('ioniqSoh',[]);
+      const d = ymd(new Date()), sh = LS.get('ioniqSoh',[]);
       if (!sh.length || sh[sh.length-1].d!==d){ sh.push({d, soh:S.soh}); LS.set('ioniqSoh', sh.slice(-400)); }
     }
   }
-  const fmtDur = h => (h==null||!isFinite(h)||h<0) ? '–' : h<1/60 ? 'dabar' : (h>=1 ? Math.floor(h)+' val. ' : '')+Math.round((h%1)*60)+' min';
-  function renderExtras(soc, cap){
-    // range from trip history
-    const trips = H('ioniqTrips');
-    let km=0, kwh=0; for (const t of trips.slice(0,20)){ const st=tripStats(t); if (st.km>=1){ km+=st.km; kwh+=st.kwh; } }
-    const avgCons = km>=5 && kwh>0 ? kwh/km*100 : null;
-    setV('avgCons', avgCons==null?'–':f(avgCons,1), 'kWh/100');
-    $('range').textContent = (avgCons && soc!=null) ? '~'+Math.round(cap*soc/100/avgCons*100)+' km' : '–';
-    $('tripCount').textContent = trips.length;
-    renderPeriods(trips);
-    $('btnMoreTrips').style.display = trips.length > tripShow ? '' : 'none';
-    $('trips').innerHTML = trips.length ? trips.slice(0,tripShow).map(t=>{
-      const st=tripStats(t), d=new Date(t.t0);
-      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})} ${d.toLocaleTimeString('lt-LT',{hour:'2-digit',minute:'2-digit'})}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'}% → ${t.soc1!=null?Math.round(t.soc1):'–'}% · ${f(st.kwh,1)} kWh</div></div><div class="b"><b>${f(st.km,0)} km</b><div class="a">${st.cons==null?'–':f(st.cons,1)+' kWh/100'}</div></div></div>`;
-    }).join('') : '<div class="note">Kelionės įrašomos automatiškai, kai programėlė prisijungusi važiuojant (nuo 1 km). Pagal jas apskaičiuojamas nuvažiuojamas atstumas.</div>';
+  function avgConsumption(){
+    let km=0, kwh=0; for (const t of H('ioniqTrips').slice(0,20)){ const st=tripStats(t); if (st.km>=1){ km+=st.km; kwh+=st.kwh; } }
+    return km>=5 && kwh>0 ? kwh/km*100 : null;
+  }
 
-    // charging
-    const cc = demoHist ? demoHist.chg : chg;
+  // ---------- render ----------
+  function render(){
+    const soc = S.socDisp ?? S.socBms;
+    const cap = USABLE_KWH*((S.soh ?? 100)/100);
+    const avgCons = avgConsumption();
+
+    // DRIVE
+    $('soc').innerHTML = soc==null ? '–' : Math.round(soc)+'<small>%</small>';
+    const arc=$('ringArc'); arc.style.strokeDashoffset = soc==null ? 552.9 : 552.9*(1-Math.min(100,soc)/100);
+    arc.style.stroke = soc==null ? 'var(--acc)' : soc<10 ? 'var(--bad)' : soc<20 ? 'var(--warn)' : 'var(--acc)';
+    $('kwhLeft').textContent = soc==null ? 'Įkrova' : '≈ '+f(cap*soc/100,1)+' kWh';
+    $('range').innerHTML = (avgCons && soc!=null) ? '≈ '+Math.round(cap*soc/100/avgCons*100)+' <span>km liko</span>' : '– <span>km liko'+(soc!=null?' (reikia kelionių istorijos)':'')+'</span>';
+
+    const k = S.kw;
+    $('pwCard').style.display = S.charging ? 'none' : '';
+    setH('pwr', u(f(k,1),'kW'));
+    $('pwTag').textContent = k==null ? '' : k>0.5 ? 'naudojama' : k<-0.5 ? 'atgaunama' : 'stovi';
+    const bar=$('pbar'), z=33.333, kk = Math.max(-50, Math.min(100, k||0));
+    const w = kk>=0 ? kk/100*(100-z) : -kk/50*z;
+    bar.style.background = kk>=0 ? 'var(--use)' : 'var(--gain)';
+    bar.style.left = (kk>=0 ? z : z-w)+'%'; bar.style.width = w+'%';
+
+    const t = trip || (demoHist ? demoHist.ioniqTrips[0] : null);
+    const ts = t ? tripStats(t) : null;
+    setH('tripKm', ts ? f(ts.km,0) : '–');
+    setH('tripCons', ts && ts.cons!=null ? f(ts.cons,1) : (avgCons ? '<span style="color:var(--mut)">'+f(avgCons,1)+'</span>' : '–'));
+    const tAvg = (S.tMin!=null && S.tMax!=null) ? Math.round((S.tMin+S.tMax)/2) : null;
+    setH('battT', tAvg==null ? '–' : u(tAvg,'°C'));
+    renderAlerts();
+
+    // charging card
     $('chgCard').style.display = S.charging ? '' : 'none';
     if (S.charging){
+      const cc = demoHist ? demoHist.chg : chg;
       const p = Math.max(0, -(S.kw||0));
-      $('chgPwr').innerHTML = f(p,1)+' <small>kW</small>';
-      setV('chgAdded', cc && S.cec!=null ? f(S.cec-cc.cec0,1) : '–', 'kWh');
-      setV('chgFrom', cc && cc.soc0!=null ? Math.round(cc.soc0) : '–', '%');
-      const left = t => soc==null ? null : Math.max(0, cap*(t-soc)/100);
+      setH('chgPwr', u(f(p,1),'kW'));
+      setH('chgAdded', cc && S.cec!=null ? u(f(S.cec-cc.cec0,1),'kWh') : '–');
+      setH('chgFrom', cc && cc.soc0!=null ? u(Math.round(cc.soc0),'%') : '–');
+      const left = tg => soc==null ? null : Math.max(0, cap*(tg-soc)/100);
       $('chgT80').textContent = p>0.3 ? (soc>=80 ? 'pasiekta' : fmtDur(left(80)/p)) : '–';
       $('chgT100').textContent = p>0.3 ? (soc>=99.5 ? 'pasiekta' : fmtDur(left(100)/p)) : '–';
     }
 
-    // cell history
-    const ch = H('ioniqCellHist');
-    if (ch.length){
-      const first = new Date(ch[ch.length-1].t).toLocaleDateString('lt-LT');
-      $('cHistInfo').textContent = `Matavimų: ${ch.length} (nuo ${first}). Įrašoma automobiliui stovint, ne dažniau kaip kas 10 min.`;
-      const cnt = {}; ch.forEach(x=>x.low.forEach(i=>cnt[i]=(cnt[i]||0)+1));
-      const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,4);
-      $('cHistWeak').innerHTML = top.length
-        ? '<div class="note" style="margin-top:8px">Dažniausiai atsiliekantys (≥30 mV žemiau vidurkio):</div><div class="weak">'+top.map(([i,n])=>`<span>#${i} · ${n} iš ${ch.length} kartų</span>`).join('')+'</div>'
-        : '<div class="note" style="margin-top:8px">✓ Nė vienas elementas pastoviai neatsilieka.</div>';
-      const pts = ch.slice(0,40).reverse();
-      if (pts.length>=2){
-        const W=300,Hh=60, mx=Math.max(60,...pts.map(x=>x.spread));
-        const xy = pts.map((x,i)=>[(i/(pts.length-1))*W, Hh-(x.spread/mx)*Hh]);
-        $('cHistChart').innerHTML = `<div class="note">Skirtumas (mV) laike:</div><svg viewBox="-2 -4 ${W+4} ${Hh+8}" style="width:100%;height:70px"><line x1="0" x2="${W}" y1="${Hh-(40/mx)*Hh}" y2="${Hh-(40/mx)*Hh}" stroke="#8a6d1a" stroke-dasharray="3 3"/><polyline fill="none" stroke="#3fd0c9" stroke-width="2" points="${xy.map(p=>p.join(',')).join(' ')}"/>${xy.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="#3fd0c9"/>`).join('')}</svg><div class="plab"><span>${new Date(pts[0].t).toLocaleDateString('lt-LT')}</span><span>geltona linija – 40 mV</span><span>dabar</span></div>`;
-      } else $('cHistChart').innerHTML='';
-    } else { $('cHistInfo').textContent='Kol kas matavimų nėra. Jie įrašomi automatiškai, kai automobilis stovi (srovė < 15 A) – taip galėsite matyti, ar tas pats elementas atsilieka nuolat.'; $('cHistWeak').innerHTML=''; $('cHistChart').innerHTML=''; }
-
-    // SOH history
+    // BATTERY
+    setH('soh', S.soh==null ? '–' : u(f(S.soh,1),'%'));
+    setH('aux', S.aux==null ? '–' : u(f(S.aux,1),'V'));
+    setH('volt', S.volt==null ? '–' : u(f(S.volt,1),'V'));
+    setH('amp', S.amp==null ? '–' : u(f(S.amp,1),'A'));
+    $('socBms').textContent = S.socBms==null ? '–' : f(S.socBms,1)+' %';
+    $('maxPR').textContent = S.maxPwr==null ? '–' : f(S.maxPwr,0)+' / '+f(S.maxReg,0)+' kW';
+    $('flags').textContent = S.relay==null ? '–' : [S.charging?'kraunama':'nekraunama', S.acPlug?'AC laidas':null, S.dcPlug?'CCS laidas':null].filter(Boolean).join(' · ');
+    $('tMinMax').textContent = S.tMin==null ? '–' : S.tMin+' / '+S.tMax+' °C';
+    $('tInlet').textContent = S.tInlet==null ? '–' : S.tInlet+' °C';
+    $('temps').innerHTML = (S.temps||[]).map((v,i)=>`<div><small>M${i+1}</small>${v==null?'–':v+'°'}</div>`).join('');
+    renderCells();
+    $('cec').textContent = S.cec==null ? '–' : f(S.cec,0)+' kWh';
+    $('ced').textContent = S.ced==null ? '–' : f(S.ced,0)+' kWh';
+    $('odo').textContent = S.odo==null ? '–' : S.odo.toLocaleString('lt-LT')+' km';
+    $('opt').textContent = S.opHours==null ? '–' : f(S.opHours,0)+' val.';
     const sh = H('ioniqSoh');
-    $('sohHist').textContent = sh.length>=2 ? `${f(sh[0].soh,1)} % (${sh[0].d}) → ${f(sh[sh.length-1].soh,1)} %` : sh.length ? `${f(sh[0].soh,1)} % nuo ${sh[0].d}` : '–';
+    $('sohHist').textContent = sh.length>=2 ? `${f(sh[0].soh,1)} % → ${f(sh[sh.length-1].soh,1)} %` : sh.length ? `${f(sh[0].soh,1)} % (nuo ${sh[0].d})` : '–';
+    renderCellHist();
+
+    // STATS
+    renderStats(avgCons);
+    renderSyncInfo();
   }
-  // ---------- period statistics ----------
-  const pad = x => String(x).padStart(2,'0');
-  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const mondayOf = d => { const x=new Date(d); x.setHours(12); x.setDate(x.getDate()-((x.getDay()+6)%7)); return ymd(x); };
-  const stamp = ms => { const d=new Date(ms); return ymd(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
-  const MONTHS = ['saus.','vas.','kov.','bal.','geg.','birž.','liep.','rugp.','rugs.','spal.','lapkr.','gruod.'];
+
+  function renderAlerts(){
+    const a = [];
+    if (S.aux!=null && S.aux < 11.8) a.push(['bad','!',`<b>12 V akumuliatorius silpnas</b> – ${f(S.aux,1)} V`]);
+    if (S.tMax!=null && S.tMax >= 40) a.push(['warn','!',`<b>Baterija įkaitusi</b> – ${S.tMax} °C, galia gali būti ribojama`]);
+    if (S.tMin!=null && S.tMin <= 2) a.push(['warn','!',`<b>Baterija šalta</b> – ${S.tMin} °C, atgavimas ir krovimas lėtesni`]);
+    if (S.cMax!=null && S.cMin!=null && (S.cMax-S.cMin) > 0.08) a.push(['warn','!',`<b>Elementų disbalansas</b> – ${Math.round((S.cMax-S.cMin)*1000)} mV`]);
+    const soc = S.socDisp ?? S.socBms;
+    if (soc!=null && soc < 15 && !S.charging) a.push(['bad','!',`<b>Žema įkrova</b> – ${Math.round(soc)} %`]);
+    if (!a.length && S.t) a.push(['ok','✓','Viskas tvarkoje']);
+    $('alerts').innerHTML = a.map(([c,i,t])=>`<div class="alert ${c}"><span class="ic">${i}</span><span>${t}</span></div>`).join('');
+  }
+
+  // ---------- cells ----------
+  let selCell = null;
+  const cellCls = dev => { const x=Math.abs(dev); return x<30 ? 'c0' : x<=50 ? 'c1' : 'c2'; };
+  function renderCells(){
+    const cells = S.cells || [];
+    const vals = cells.filter(v=>v!=null);
+    let mn = S.cMin, mx = S.cMax, mnNo = S.cMinNo, mxNo = S.cMaxNo;
+    if (vals.length){ mn = Math.min(...vals); mx = Math.max(...vals); mnNo = cells.indexOf(mn)+1; mxNo = cells.indexOf(mx)+1; }
+    const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : (S.volt ? S.volt/96 : null);
+    setH('cMin', mn==null ? '–' : u(f(mn,2),'V'+(mnNo?' · #'+mnNo:'')));
+    setH('cMax', mx==null ? '–' : u(f(mx,2),'V'+(mxNo?' · #'+mxNo:'')));
+    setH('cAvg', avg==null ? '–' : u(f(avg,3),'V'));
+    const spread = (mn!=null && mx!=null) ? Math.round((mx-mn)*1000) : null;
+    setH('cDiff', spread==null ? '–' : u(spread,'mV'));
+    let icon='?', bg='var(--dim)', t1='Laukiama duomenų', t2='Parodys, ar visi 96 elementai įsikrovę vienodai.';
+    if (spread!=null){
+      if (spread<=20){ icon='✓'; bg='var(--gain)'; t1='Puikus balansas'; t2='Visi elementai beveik vienodi.'; }
+      else if (spread<=40){ icon='✓'; bg='var(--gain)'; t1='Geras balansas'; t2='Nedidelis skirtumas – normalu važiuojant ar kraunant.'; }
+      else if (spread<=80){ icon='!'; bg='var(--warn)'; t1='Vidutinis balansas'; t2='Verta stebėti. Pilnas lėtas įkrovimas iki 100 % padeda išsilyginti.'; }
+      else { icon='!'; bg='var(--bad)'; t1='Didelis disbalansas'; t2='Elementas #'+mnNo+' gerokai atsilieka. Jei kartojasi ramybės būsenoje – verta patikrinti servise.'; }
+      if (S.amp!=null && Math.abs(S.amp)>20 && spread>20) t2 += ' Dabar teka didelė srovė – skirtumai atrodo didesni.';
+    }
+    $('cBadge').textContent=icon; $('cBadge').style.background=bg; $('cVerdict').textContent=t1; $('cVerdictSub').textContent=t2;
+    const grid = $('cells');
+    if (!vals.length){ grid.innerHTML = Array.from({length:96},(_,i)=>`<button class="cn"><span class="n">${i+1}</span><span class="d">–</span></button>`).join(''); return; }
+    grid.innerHTML = cells.map((v,i)=>{
+      if (v==null) return `<button class="cn" data-i="${i}"><span class="n">${i+1}</span><span class="d">–</span></button>`;
+      const dev = Math.round((v-avg)*1000);
+      const txt = Math.abs(dev)<10 ? '·' : (dev>0?'+':'')+dev;
+      return `<button data-i="${i}" class="${cellCls(dev)} ${selCell===i?'sel':''}"><span class="n">${i+1}</span><span class="d">${txt}</span></button>`;
+    }).join('');
+    if (selCell!=null){
+      const v = cells[selCell];
+      if (v!=null){
+        const dev = Math.round((v-avg)*1000);
+        const word = Math.abs(dev)<30 ? 'tvarkoje' : Math.abs(dev)<=50 ? 'šiek tiek skiriasi' : (dev<0?'atsilieka':'aukštesnė už kitus');
+        $('cInfo').innerHTML = `<b>Elementas #${selCell+1}</b>: ${f(v,2)} V · ${(dev>0?'+':'')+dev} mV nuo vidurkio – <b>${word}</b>.`;
+      }
+    }
+  }
+  document.addEventListener('click', ev=>{
+    const b = ev.target.closest && ev.target.closest('#cells button[data-i]'); if (!b) return;
+    selCell = +b.dataset.i; renderCells();
+  });
+  function renderCellHist(){
+    const ch = H('ioniqCellHist');
+    if (!ch.length){ $('cHistInfo').textContent='Matavimai įrašomi automatiškai, kai automobilis stovi (srovė < 15 A), ne dažniau kaip kas 10 min.'; $('cHistWeak').innerHTML=''; $('cHistChart').innerHTML=''; return; }
+    $('cHistInfo').textContent = `Matavimų: ${ch.length} (nuo ${new Date(ch[ch.length-1].t).toLocaleDateString('lt-LT')}).`;
+    const cnt = {}; ch.forEach(x=>x.low.forEach(i=>cnt[i]=(cnt[i]||0)+1));
+    const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    $('cHistWeak').innerHTML = top.length
+      ? '<div class="note" style="margin-top:6px">Dažniausiai atsiliekantys:</div><div class="weak">'+top.map(([i,n])=>`<span>#${i} · ${n} iš ${ch.length}</span>`).join('')+'</div>'
+      : '<div class="note" style="margin-top:6px">✓ Nė vienas elementas pastoviai neatsilieka.</div>';
+    const pts = ch.slice(0,40).reverse();
+    if (pts.length>=2){
+      const W=300,Hh=60, mx=Math.max(60,...pts.map(x=>x.spread));
+      const xy = pts.map((x,i)=>[(i/(pts.length-1))*W, Hh-(x.spread/mx)*Hh]);
+      $('cHistChart').innerHTML = `<svg viewBox="-3 -4 ${W+6} ${Hh+8}" style="width:100%;height:70px"><line x1="0" x2="${W}" y1="${Hh-(40/mx)*Hh}" y2="${Hh-(40/mx)*Hh}" stroke="var(--warn)" stroke-dasharray="3 4" opacity=".7"/><polyline fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round" points="${xy.map(p=>p.join(',')).join(' ')}"/></svg><div class="glab"><span>${new Date(pts[0].t).toLocaleDateString('lt-LT')}</span><span>skirtumas, mV (linija – 40)</span><span>dabar</span></div>`;
+    } else $('cHistChart').innerHTML='';
+  }
+
+  // ---------- statistics ----------
   let tripShow = 10;
   function sumBy(trips, charges, pred){
     let km=0, kwh=0, n=0, ch=0;
-    for (const t of trips){ const d=new Date(t.t0); if (!pred(d)) continue; const st=tripStats(t); km+=st.km; kwh+=st.kwh; n++; }
+    for (const t of trips){ if (!pred(new Date(t.t0))) continue; const st=tripStats(t); km+=st.km; kwh+=st.kwh; n++; }
     for (const c of charges){ if (pred(new Date(c.t0))) ch += (c.cec1-c.cec0)||0; }
     return { km, kwh, n, ch, cons: km>=1 ? kwh/km*100 : null };
   }
-  function renderPeriods(trips){
-    const charges = H('ioniqCharges');
+  function renderStats(avgCons){
+    const trips = H('ioniqTrips'), charges = H('ioniqCharges');
     const now = new Date(), today=ymd(now), wk=mondayOf(now), mo=today.slice(0,7);
-    const P = [
-      ['Šiandien', d=>ymd(d)===today], ['Ši savaitė', d=>mondayOf(d)===wk],
-      ['Šis mėnuo', d=>ymd(d).slice(0,7)===mo], ['Viso', ()=>true]
-    ];
+    const P = [['Šiandien', d=>ymd(d)===today], ['Ši savaitė', d=>mondayOf(d)===wk], ['Šis mėnuo', d=>ymd(d).slice(0,7)===mo], ['Viso', ()=>true]];
     $('periods').innerHTML = P.map(([name,pred])=>{
       const r = sumBy(trips, charges, pred);
       return `<div class="ptile"><div class="l">${name}</div><div class="km">${f(r.km,0)} <small>km</small></div><div class="k2">Sunaudota ${f(r.kwh,1)} kWh</div><div class="k2">${r.cons==null?'–':f(r.cons,1)} kWh/100 km</div><div class="k2">Įkrauta ${f(r.ch,1)} kWh</div></div>`;
@@ -715,13 +844,22 @@
       const r = sumBy(trips, charges, d=>ymd(d).slice(0,7)===k);
       return `<tr><td>${k.slice(0,4)} ${MONTHS[+k.slice(5,7)-1]}</td><td>${f(r.km,0)}</td><td>${f(r.kwh,1)}</td><td>${r.cons==null?'–':f(r.cons,1)}</td><td>${f(r.ch,1)}</td></tr>`;
     }).join('')+'</table>' : '<div class="note">Duomenys atsiras po pirmųjų kelionių.</div>';
-    renderSyncInfo();
+    setH('avgCons', avgCons==null ? '–' : u(f(avgCons,1),'kWh/100'));
+    $('tripCount').textContent = trips.length;
+    $('btnMoreTrips').style.display = trips.length > tripShow ? '' : 'none';
+    $('trips').innerHTML = trips.length ? trips.slice(0,tripShow).map(t=>{
+      const st=tripStats(t), d=new Date(t.t0);
+      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})}, ${pad(d.getHours())}:${pad(d.getMinutes())}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'} → ${t.soc1!=null?Math.round(t.soc1):'–'} % · ${f(st.kwh,1)} kWh</div></div><div class="b"><div>${f(st.km,0)} km</div><div class="a">${st.cons==null?'–':f(st.cons,1)+' kWh/100'}</div></div></div>`;
+    }).join('') : '<div class="note">Kelionės įrašomos automatiškai, kai važiuojant programėlė prisijungusi (nuo 1 km).</div>';
   }
   $('btnMoreTrips').onclick = () => { tripShow += 20; render(); };
+  let clearArm=false;
+  $('btnClearTrips').onclick = () => {
+    if (!clearArm){ clearArm=true; $('btnClearTrips').textContent='Paspauskite dar kartą, kad ištrintumėte'; setTimeout(()=>{clearArm=false; $('btnClearTrips').textContent='Išvalyti kelionių istoriją';},4000); return; }
+    clearArm=false; LS.set('ioniqTrips',[]); trip=null; $('btnClearTrips').textContent='Išvalyti kelionių istoriją'; render();
+  };
 
   // ---------- Google Sheets sync ----------
-  const thr = {};
-  function throttle(k, ms){ const n=Date.now(); if (!thr[k] || n-thr[k]>=ms){ thr[k]=n; return true; } return false; }
   function syncCfg(){ return LS.get('ioniqSync', null); }
   (function readSetupHash(){
     const m = location.hash.match(/^#cfg=([A-Za-z0-9_\-]+={0,2})$/);
@@ -743,6 +881,7 @@
       kwh, soc0:c.soc0, soc1:c.soc1, type:c.type||'', avgKw: min>=1 ? kwh/(min/60) : null, minutes:min };
   }
   async function post(cfg, body){
+    if (navigator.onLine === false) return false;
     const data = JSON.stringify(body);
     try{ if (navigator.sendBeacon && navigator.sendBeacon(cfg.url, new Blob([data],{type:'text/plain;charset=utf-8'}))) return true; }catch(e){}
     try{ await fetch(cfg.url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:data}); return true; }catch(e){ log('Sinchronizacija nepavyko: '+errText(e)); return false; }
@@ -751,6 +890,7 @@
   function syncSoon(){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(false), 3000); }
   async function syncNow(all){
     const cfg = syncCfg(); if (!cfg || demoTimer) return;
+    if (navigator.onLine === false){ renderSyncInfo('Nėra interneto – bus išsiųsta vėliau'); return; }
     const trips = LS.get('ioniqTrips',[]), charges = LS.get('ioniqCharges',[]);
     const tq = trips.filter(t => all || !t.sent || t.sent < (t.t1||0));
     const cq = charges.filter(c => all || !c.sent || c.sent < (c.t1||0));
@@ -769,20 +909,17 @@
     }
     renderSyncInfo();
   }
-  function renderSyncInfo(){
+  function renderSyncInfo(msg){
     const cfg = syncCfg(), at = LS.get('ioniqSyncAt', null);
-    $('syncInfo').textContent = !cfg ? 'Neprijungta – atidarykite nustatymo nuorodą' : at ? 'Paskutinį kartą išsiųsta '+stamp(at) : 'Prijungta, dar nesiųsta';
+    const pend = LS.get('ioniqTrips',[]).filter(t=>!t.sent || t.sent<(t.t1||0)).length + LS.get('ioniqCharges',[]).filter(c=>!c.sent || c.sent<(c.t1||0)).length;
+    $('syncInfo').innerHTML = msg ? msg : !cfg ? 'Neprijungta<div class="note">Atidarykite nustatymo nuorodą</div>' :
+      (at ? 'Išsiųsta '+stamp(at) : 'Prijungta') + (pend ? `<div class="note">Laukia išsiuntimo: ${pend}</div>` : '<div class="note">Viskas išsiųsta</div>');
     $('btnSync').disabled = !cfg;
   }
   $('btnSync').onclick = () => syncNow(true).then(()=>{ $('btnSync').textContent='Išsiųsta ✓'; setTimeout(()=>$('btnSync').textContent='Siųsti dabar',2500); });
   setInterval(()=>{ if (running) syncNow(false); }, 120e3);
+  window.addEventListener('online', ()=>syncNow(false));
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden') syncNow(false); });
-
-  let clearArm=false;
-  $('btnClearTrips').onclick = () => {
-    if (!clearArm){ clearArm=true; $('btnClearTrips').textContent='Paspauskite dar kartą, kad ištrintumėte'; setTimeout(()=>{clearArm=false; $('btnClearTrips').textContent='Išvalyti kelionių istoriją';},4000); return; }
-    clearArm=false; LS.set('ioniqTrips',[]); trip=null; $('btnClearTrips').textContent='Išvalyti kelionių istoriją'; render();
-  };
 
   // ---------- persistence (last known values) ----------
   function save(){ try{ localStorage.setItem('ioniqLast', JSON.stringify(S)); }catch(e){} }
@@ -799,49 +936,48 @@
     session=null;
     const day=864e5, now=Date.now();
     demoHist = {
-      ioniqTrips: [[0.2,42,71,88,6.1],[1.1,18,58,64,2.4],[2.3,65,30,77,9.3],[3.1,12,84,90,1.7],[33,120,40,88,17.8],[36,55,60,80,8.0]].map(([d,km,s1,s0,k],i)=>({id:i,t0:now-d*day,odo0:84213-km-i*100,odo1:84213-i*100,ced0:0,ced1:k+0.8,cec0:0,cec1:0.8,soc0:s0,soc1:s1})),
+      ioniqTrips: [[0.02,12,71,74,1.6],[0.2,42,71,88,6.1],[1.1,18,58,64,2.4],[2.3,65,30,77,9.3],[3.1,12,84,90,1.7],[33,120,40,88,17.8],[36,55,60,80,8.0]].map(([d,km,s1,s0,k],i)=>({id:i,t0:now-d*day,odo0:84213-km-i*100,odo1:84213-i*100,ced0:0,ced1:k+0.8,cec0:0,cec1:0.8,soc0:s0,soc1:s1})),
       ioniqCellHist: Array.from({length:14},(_,i)=>({t:now-i*day*1.5, spread:[40,40,60,40,40,60,40,40,20,40,40,60,40,40][i], low:i%3?[7]:[7,23], soc:60})),
       ioniqSoh: [{d:'2026-05-02',soh:96.6},{d:'2026-11-01',soh:96.2}],
       ioniqCharges: [{id:'c1',t0:now-1.5*day,t1:now-1.4*day,cec0:0,cec1:14.2,soc0:30,soc1:82,type:'AC'},{id:'c2',t0:now-35*day,t1:now-34.9*day,cec0:0,cec1:18.1,soc0:20,soc1:85,type:'DC'}],
       chg: { cec0:18342.6, soc0:31 }
     };
-    setStatus('Demo režimas','busy'); $('btnDemo').textContent='Stop';
+    setStatus('Demo','busy'); $('btnDemo').textContent='Stop';
     demoTimer=setInterval(()=>{
       t++;
-      S.charging = (t%40)>=20; S.acPlug=false; S.dcPlug=S.charging;
+      S.charging = (t%40)>=25; S.dcPlug=S.charging;
       if (S.charging){ S.kw = -(44+Math.random()*2); S.amp=S.kw*1000/S.volt; S.cec += -S.kw/3600*20; S.t=Date.now(); render(); return; }
-      S.kw = 12*Math.sin(t/5) + 8 + (Math.random()*6-3);
+      S.kw = 14*Math.sin(t/4) + 7 + (Math.random()*5-2.5);
       S.amp = S.kw*1000/S.volt; S.volt = 368.4 - S.kw*0.15;
       S.ced += Math.max(0,S.kw)/3600*20; S.cec += Math.max(0,-S.kw)/3600*20;
       if (t%3===0) S.odo += 0.1;
       S.t=Date.now(); render();
     },1000);
-    render();
+    S.t=Date.now(); render();
   }
-  function stopDemo(){ if (demoTimer){ clearInterval(demoTimer); demoTimer=null; demoHist=null; S.charging=false; $('btnDemo').textContent='Demo'; load(); session=null; setStatus(running?'Prisijungta':'Neprisijungta', running?'on':''); render(); } }
+  function stopDemo(){ if (demoTimer){ clearInterval(demoTimer); demoTimer=null; demoHist=null; S.charging=false; $('btnDemo').textContent='Demo'; for (const k in S) delete S[k]; load(); session=null; setStatus(running?'Prisijungta':'Neprisijungta', running?'on':''); render(); } }
 
-  // ---------- UI wiring ----------
-  $('btnConn').onclick = () => running ? disconnect() : connect();
-  $('btnDemo').onclick = () => demoTimer ? stopDemo() : startDemo();
-  $('btnCopy').onclick = async () => { try{ await navigator.clipboard.writeText(logLines.join('\n')); $('btnCopy').textContent='Nukopijuota ✓'; }catch(e){ $('btnCopy').textContent='Nepavyko nukopijuoti'; } };
-
-  load(); render();
-  log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
-  $('ver').textContent = 'v'+APP_VERSION;
-  // check whether a newer version is published
+  // ---------- version check ----------
   async function checkUpdate(){
     try{
       const t = await (await fetch(location.pathname+'?n='+Date.now(), {cache:'no-store'})).text();
       const m = t.match(/APP_VERSION = (\d+)/);
-      if (m && +m[1] > APP_VERSION){
-        $('newverTxt').textContent = 'Yra nauja versija v'+m[1]+' (jūs matote v'+APP_VERSION+')';
-        $('newver').style.display='flex';
-      }
+      if (m && +m[1] > APP_VERSION){ $('newverTxt').textContent = 'Yra nauja versija v'+m[1]+' (dabar v'+APP_VERSION+')'; $('newver').style.display='flex'; }
     }catch(e){}
   }
   $('btnUpdate').onclick = () => { location.href = location.pathname+'?v='+Date.now(); };
-  checkUpdate(); setInterval(checkUpdate, 10*60e3);
+
+  // ---------- wiring ----------
+  $('btnConn').onclick = () => running ? disconnect() : connect();
+  $('btnDemo').onclick = () => demoTimer ? stopDemo() : startDemo();
+  $('btnCopy').onclick = async () => { try{ await navigator.clipboard.writeText(logLines.join('\n')); $('btnCopy').textContent='Nukopijuota ✓'; }catch(e){ $('btnCopy').textContent='Nepavyko nukopijuoti'; } };
+
+  $('ver').textContent = 'v'+APP_VERSION;
+  applyTheme(); syncToggles(); showTab(SET.tab || 'drive');
+  load(); render();
+  log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
+  checkUpdate(); setInterval(checkUpdate, 10*60e3);
 })();
 </script>
 </body>
