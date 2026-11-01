@@ -50,9 +50,20 @@
   .tile .l{font-size:11.5px;color:var(--mut)}
   .tile .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
   .tile .v small{font-size:12px;color:var(--mut);font-weight:500}
-  .cells{display:flex;align-items:flex-end;gap:1px;height:70px;margin-top:6px}
-  .cells i{flex:1;background:var(--acc);border-radius:1px;min-height:2px}
-  .cells i.mn{background:var(--bad)} .cells i.mx{background:var(--warn)}
+  .verdict{display:flex;align-items:center;gap:12px;background:var(--card2);border-radius:12px;padding:12px;margin-bottom:10px}
+  .verdict .badge{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+  .verdict .t1{font-size:17px;font-weight:650}
+  .verdict .t2{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.35}
+  .cgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:10px}
+  .cgrid button{all:unset;box-sizing:border-box;border-radius:7px;padding:5px 0 4px;text-align:center;cursor:pointer;background:#1e2a2a;border:1.5px solid transparent}
+  .cgrid button .n{display:block;font-size:9px;color:rgba(255,255,255,.55)}
+  .cgrid button .d{display:block;font-size:11.5px;font-weight:650;font-variant-numeric:tabular-nums;color:#fff}
+  .cgrid button.sel{border-color:#fff}
+  .cgrid button.na{opacity:.25}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .cinfo{background:var(--card2);border-radius:10px;padding:9px 11px;margin-top:10px;font-size:13px;min-height:20px}
   .temps{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:8px}
   .temps div{background:var(--card2);border-radius:8px;text-align:center;padding:6px 0;font-size:13px;font-variant-numeric:tabular-nums}
   .temps div small{display:block;font-size:9.5px;color:var(--mut)}
@@ -130,14 +141,25 @@
 </div>
 
 <div class="card">
-  <h2>Elementai (96)</h2>
-  <div class="grid">
-    <div class="tile"><div class="l">Min elementas</div><div class="v" id="cMin">– <small>V</small></div></div>
-    <div class="tile"><div class="l">Maks elementas</div><div class="v" id="cMax">– <small>V</small></div></div>
+  <h2>Baterijos elementai (96)</h2>
+  <div class="verdict">
+    <div class="badge" id="cBadge" style="background:#2a313d">?</div>
+    <div><div class="t1" id="cVerdict">Laukiama duomenų</div><div class="t2" id="cVerdictSub">Elementų balansas parodys, ar visi 96 elementai įsikrovę vienodai.</div></div>
   </div>
-  <div class="kv" style="margin-top:10px"><span>Skirtumas</span><b id="cDiff">–</b></div>
-  <div class="cells" id="cells"></div>
-  <div class="note" style="margin-top:6px">Visos 96 elementų įtampos atnaujinamos kas ~30 s. Raudona – žemiausia, geltona – aukščiausia.</div>
+  <div class="grid">
+    <div class="tile"><div class="l">Silpniausias</div><div class="v" id="cMin">– <small>V</small></div></div>
+    <div class="tile"><div class="l">Stipriausias</div><div class="v" id="cMax">– <small>V</small></div></div>
+    <div class="tile"><div class="l">Vidurkis</div><div class="v" id="cAvg">– <small>V</small></div></div>
+    <div class="tile"><div class="l">Skirtumas</div><div class="v" id="cDiff">– <small>mV</small></div></div>
+  </div>
+  <div class="cgrid" id="cells"></div>
+  <div class="legend">
+    <span><i style="background:#1f7a52"></i>prie vidurkio</span>
+    <span><i style="background:#8a6d1a"></i>±30–50 mV</span>
+    <span><i style="background:#8f2f2f"></i>daugiau nei ±50 mV</span>
+  </div>
+  <div class="cinfo" id="cInfo">Langelyje – elemento numeris ir nuokrypis nuo vidurkio (mV). Paspauskite langelį, kad pamatytumėte jo įtampą.</div>
+  <div class="note" style="margin-top:8px">Atnaujinama kas ~30 s. Automobilis matuoja 20 mV tikslumu, todėl nedideli 20 mV skirtumai yra normalūs.</div>
 </div>
 
 <div class="card">
@@ -435,23 +457,67 @@
     setV('tInlet', S.tInlet==null?'–':S.tInlet,'°C');
     $('temps').innerHTML = (S.temps||[]).map((t,i)=>`<div><small>M${i+1}</small>${t==null?'–':t+'°'}</div>`).join('');
 
-    setV('cMin', f(S.cMin,2)+(S.cMinNo?' <small>#'+S.cMinNo+'</small>':''), 'V');
-    setV('cMax', f(S.cMax,2)+(S.cMaxNo?' <small>#'+S.cMaxNo+'</small>':''), 'V');
-    $('cDiff').textContent = (S.cMax!=null&&S.cMin!=null) ? Math.round((S.cMax-S.cMin)*1000)+' mV' : '–';
-    if (S.cells && S.cells.some(v=>v!=null)){
-      const vals=S.cells.filter(v=>v!=null), mn=Math.min(...vals), mx=Math.max(...vals), span=Math.max(0.04,mx-mn);
-      $('cells').innerHTML = S.cells.map(v=>{
-        if (v==null) return '<i style="height:2px;opacity:.3"></i>';
-        const h = 15 + 85*(v-(mn-span*0.1))/(span*1.1);
-        return `<i class="${v===mn?'mn':v===mx?'mx':''}" style="height:${Math.min(100,h)}%" title="${v.toFixed(2)} V"></i>`;
-      }).join('');
-    }
+    renderCells();
 
     setV('cec', f(S.cec,0),'kWh'); setV('ced', f(S.ced,0),'kWh');
     setV('odo', S.odo==null?'–':S.odo.toLocaleString('lt-LT'),'km');
     setV('opt', f(S.opHours,0),'val.');
     $('upd').textContent = S.t ? 'Atnaujinta '+new Date(S.t).toLocaleString('lt-LT') + ((running||demoTimer)?'':' (paskutiniai išsaugoti duomenys)') : '';
   }
+
+  // ---------- cells view ----------
+  let selCell = null;
+  function cellColor(dev){ const a=Math.abs(dev); return a<30 ? '#1f7a52' : a<=50 ? '#8a6d1a' : '#8f2f2f'; }
+  function renderCells(){
+    const cells = S.cells || [];
+    const vals = cells.filter(v=>v!=null);
+    let mn = S.cMin, mx = S.cMax, mnNo = S.cMinNo, mxNo = S.cMaxNo;
+    if (vals.length){
+      mn = Math.min(...vals); mx = Math.max(...vals);
+      mnNo = cells.indexOf(mn)+1; mxNo = cells.indexOf(mx)+1;
+    }
+    const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : (S.volt ? S.volt/96 : null);
+    setV('cMin', mn==null?'–':f(mn,2)+(mnNo?' <small>#'+mnNo+'</small>':''), 'V');
+    setV('cMax', mx==null?'–':f(mx,2)+(mxNo?' <small>#'+mxNo+'</small>':''), 'V');
+    setV('cAvg', avg==null?'–':f(avg,3), 'V');
+    const spread = (mn!=null && mx!=null) ? Math.round((mx-mn)*1000) : null;
+    setV('cDiff', spread==null?'–':spread, 'mV');
+
+    // verdict
+    let icon='?', bg='#2a313d', t1='Laukiama duomenų', t2='Elementų balansas parodys, ar visi 96 elementai įsikrovę vienodai.';
+    if (spread!=null){
+      if (spread<=20){ icon='✓'; bg='#1f7a52'; t1='Puikus balansas'; t2='Visi elementai beveik vienodi. Baterija subalansuota.'; }
+      else if (spread<=40){ icon='✓'; bg='#2d6a4f'; t1='Geras balansas'; t2='Skirtumas nedidelis – tai normalu, ypač važiuojant ar kraunant.'; }
+      else if (spread<=80){ icon='!'; bg='#8a6d1a'; t1='Vidutinis balansas'; t2='Verta stebėti. Pilnas įkrovimas iki 100 % lėtu krovikliu padeda baterijai išsilyginti.'; }
+      else { icon='!'; bg='#8f2f2f'; t1='Didelis disbalansas'; t2='Elementas #'+mnNo+' gerokai atsilieka. Jei kartojasi ir ramybės būsenoje – verta patikrinti servise.'; }
+      if (S.amp!=null && Math.abs(S.amp)>20 && spread>20) t2 += ' Dabar teka didelė srovė, todėl skirtumai atrodo didesni.';
+    }
+    $('cBadge').textContent=icon; $('cBadge').style.background=bg; $('cVerdict').textContent=t1; $('cVerdictSub').textContent=t2;
+
+    // grid
+    const grid = $('cells');
+    if (!vals.length){
+      grid.innerHTML = Array.from({length:96},(_,i)=>`<button class="na"><span class="n">${i+1}</span><span class="d">–</span></button>`).join('');
+      return;
+    }
+    grid.innerHTML = cells.map((v,i)=>{
+      if (v==null) return `<button class="na" data-i="${i}"><span class="n">${i+1}</span><span class="d">–</span></button>`;
+      const dev = Math.round((v-avg)*1000);
+      const txt = Math.abs(dev)<10 ? '0' : (dev>0?'+':'')+dev;
+      return `<button data-i="${i}" class="${selCell===i?'sel':''}" style="background:${cellColor(dev)}"><span class="n">${i+1}</span><span class="d">${txt}</span></button>`;
+    }).join('');
+    if (selCell!=null) showCell(selCell, avg);
+  }
+  function showCell(i, avg){
+    const v = (S.cells||[])[i]; if (v==null) return;
+    const dev = Math.round((v-avg)*1000);
+    const word = Math.abs(dev)<30 ? 'tvarkoje' : Math.abs(dev)<=50 ? 'šiek tiek skiriasi' : (dev<0?'atsilieka':'aukštesnė už kitus');
+    $('cInfo').innerHTML = `<b>Elementas #${i+1}</b>: ${v.toFixed(2)} V · nuokrypis ${(dev>0?'+':'')+dev} mV nuo vidurkio – <b>${word}</b>.`;
+  }
+  document.addEventListener('click', ev=>{
+    const b = ev.target.closest && ev.target.closest('#cells button[data-i]'); if (!b) return;
+    selCell = +b.dataset.i; renderCells();
+  });
 
   // ---------- persistence (last known values) ----------
   function save(){ try{ localStorage.setItem('ioniqLast', JSON.stringify(S)); }catch(e){} }
@@ -464,7 +530,7 @@
     Object.assign(S,{socBms:71.5,socDisp:74,soh:96.2,aux:14.4,maxReg:98,maxPwr:98,volt:368.4,amp:0,
       tMax:21,tMin:18,tInlet:19,temps:[19,20,21,20,19,18,19,20,21,20,19,19],cMax:3.86,cMaxNo:41,cMin:3.84,cMinNo:7,
       cec:18342.6,ced:19870.2,opHours:7412,odo:84213,charging:false,acPlug:false,dcPlug:false,relay:true});
-    S.cells = Array.from({length:96},(_,i)=>+(3.845+Math.random()*0.015).toFixed(2));
+    S.cells = Array.from({length:96},(_,i)=> i===6 ? 3.80 : i===40 ? 3.88 : (Math.random()<0.3 ? 3.84 : 3.86));
     session=null;
     setStatus('Demo režimas','busy'); $('btnDemo').textContent='Stop';
     demoTimer=setInterval(()=>{
@@ -485,7 +551,7 @@
   $('btnCopy').onclick = async () => { try{ await navigator.clipboard.writeText(logLines.join('\n')); $('btnCopy').textContent='Nukopijuota ✓'; }catch(e){ $('btnCopy').textContent='Nepavyko nukopijuoti'; } };
 
   load(); render();
-  log('Versija 2 · '+navigator.userAgent);
+  log('Versija 3 · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
 })();
 </script>
