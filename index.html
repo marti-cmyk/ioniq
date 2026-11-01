@@ -98,12 +98,28 @@
   .verdict .t1{font-size:16px;font-weight:600}
   .verdict .t2{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.4}
   .cgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:12px}
-  .cgrid button{all:unset;box-sizing:border-box;border-radius:8px;padding:6px 0 5px;text-align:center;cursor:pointer;border:1.5px solid transparent}
-  .cgrid .n{display:block;font-size:9px;opacity:.65}
-  .cgrid .d{display:block;font-size:11.5px;font-weight:600}
+  .cgrid button{all:unset;box-sizing:border-box;border-radius:8px;padding:5px 0 5px;text-align:center;cursor:pointer;border:1.5px solid transparent;color:var(--txt)}
+  .cgrid .n{display:block;font-size:9px;opacity:.6}
+  .cgrid .d{display:block;font-size:12px;font-weight:600;letter-spacing:-.2px}
   .cgrid button.sel{border-color:var(--txt)}
+  .cgrid button.mn{box-shadow:inset 0 0 0 1.5px var(--bad)} .cgrid button.mx{box-shadow:inset 0 0 0 1.5px var(--acc)}
+  .cbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:12px}
+  .cbar i{flex:1}
+  .cbarl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);margin-top:4px}
+  .seg2{display:inline-grid;grid-auto-flow:column;background:var(--s2);border-radius:10px;padding:3px;gap:3px}
+  .seg2 button{all:unset;text-align:center;padding:5px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;color:var(--mut)}
+  .seg2 button.on{background:var(--s1);color:var(--txt);font-weight:600}
+  .hrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  .hrow h2{margin:0}
   .c0{background:color-mix(in srgb,var(--gain) 22%,var(--s2))} .c1{background:color-mix(in srgb,var(--warn) 40%,var(--s2))} .c2{background:color-mix(in srgb,var(--bad) 55%,var(--s2))} .cn{background:var(--s2);opacity:.4}
   .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:10px}
+  /* charts */
+  .chart svg{width:100%;display:block}
+  .chart text{fill:var(--mut);font-size:10px;font-family:inherit}
+  .ctot{display:flex;gap:16px;flex-wrap:wrap;margin:-4px 0 10px;font-size:13px;color:var(--mut)}
+  .ctot b{color:var(--txt);font-weight:600;font-size:15px}
+  .exp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .exp .btn{padding:12px 10px;font-size:14px}
   .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
   .cinfo{background:var(--s2);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}
   .weak{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -142,7 +158,7 @@
   details summary{cursor:pointer;color:var(--mut);font-size:13.5px}
 
   /* tab bar */
-  nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:5}
+  nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:5}
   nav button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:var(--dim);font-size:11px;font-weight:500}
   nav button svg{width:23px;height:23px}
   nav button.on{color:var(--acc)}
@@ -244,9 +260,12 @@
       <div class="tile"><div class="l">Vidurkis</div><div class="v num" id="cAvg">–</div></div>
       <div class="tile"><div class="l">Skirtumas</div><div class="v num" id="cDiff">–</div></div>
     </div>
+    <div class="hrow" style="margin:16px 0 0"><div class="note">Langelyje rodoma:</div><div class="seg2" id="cellMode"><button data-m="V">Įtampa, V</button><button data-m="mV">Nuokrypis, mV</button></div></div>
     <div class="cgrid num" id="cells"></div>
-    <div class="legend"><span><i class="c0"></i>iki ±30 mV</span><span><i class="c1"></i>±30–50 mV</span><span><i class="c2"></i>&gt; ±50 mV</span></div>
-    <div class="cinfo" id="cInfo">Langelyje – elemento nr. ir nuokrypis nuo vidurkio (mV). Paspauskite langelį.</div>
+    <div class="cbar" id="cbar"></div>
+    <div class="cbarl num"><span>−60 mV</span><span>−30</span><span>vidurkis</span><span>+30</span><span>+60 mV</span></div>
+    <div class="legend"><span><i style="box-shadow:inset 0 0 0 1.5px var(--bad)"></i>silpniausias</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--acc)"></i>stipriausias</span></div>
+    <div class="cinfo" id="cInfo">Spalva rodo, kiek elementas nutolęs nuo vidurkio: žalia – tvarkoje, geltona – šiek tiek žemiau, raudona – atsilieka. Paspauskite langelį.</div>
     <div class="note" style="margin-top:8px">Atnaujinama kas ~30 s. Matavimo tikslumas 20 mV.</div>
     <div class="sub">ISTORIJA</div>
     <div class="note" id="cHistInfo"></div>
@@ -283,6 +302,27 @@
   </div>
 </section>
 
+<!-- ============ CHARTS ============ -->
+<section class="tab" id="tab-charts">
+  <div class="hrow"><div class="seg2" id="chPeriod"><button data-p="d">30 dienų</button><button data-p="w">12 savaičių</button><button data-p="m">12 mėnesių</button></div></div>
+  <div class="card chart"><h2>Nuvažiuota, km</h2><div class="ctot num" id="chKmTot"></div><div id="chKm"></div></div>
+  <div class="card chart"><h2>Energija, kWh</h2><div class="ctot num" id="chKwhTot"></div><div id="chKwh"></div>
+    <div class="legend"><span><i style="background:var(--use)"></i>sunaudota</span><span><i style="background:var(--gain)"></i>įkrauta</span></div></div>
+  <div class="card chart"><h2>Sąnaudos, kWh/100 km</h2><div class="ctot num" id="chConsTot"></div><div id="chCons"></div></div>
+  <div class="card chart"><h2>Baterijos sveikata (SOH)</h2><div id="chSoh"></div></div>
+  <div class="card">
+    <h2>Eksportas</h2>
+    <div class="note">Atsisiųskite duomenis ir atidarykite su Excel arba Google Sheets (Sheets: Failas → Importuoti → Įkelti).</div>
+    <div class="exp">
+      <button class="btn" id="btnXlsx">Excel (.xlsx)</button>
+      <button class="btn sec" id="btnCsv">CSV (kelionės)</button>
+      <button class="btn sec" id="btnCopyT">Kopijuoti kelionių lentelę</button>
+      <button class="btn sec" id="btnCopyM">Kopijuoti mėnesių suvestinę</button>
+    </div>
+    <div class="note" id="expRes" style="margin-top:10px">Excel faile: kelionės, krovimai, dienos, savaitės, mėnesiai, elementų įtampos ir SOH. Nukopijuotą lentelę galima įklijuoti tiesiai į Google Sheets.</div>
+  </div>
+</section>
+
 <!-- ============ MORE ============ -->
 <section class="tab" id="tab-more">
   <div class="card">
@@ -299,12 +339,10 @@
   </div>
 
   <div class="card">
-    <h2>Google Sheets</h2>
-    <div class="sw" style="border:0;padding-top:0"><div id="syncInfo">Neprijungta</div><button class="btn small sec" id="btnSync">Siųsti dabar</button></div>
-    <div class="kv"><span>Ryšys su lentele</span><b id="pingRes">–</b></div>
+    <h2>Duomenys</h2>
     <div class="kv"><span>Įrašyta telefone</span><b class="num" id="dataCnt">–</b></div>
     <div class="kv"><span>Rida (reikalinga kelionėms)</span><b class="num" id="odoState">–</b></div>
-    <div class="row" style="margin-top:12px"><button class="btn small sec" id="btnPing">Tikrinti ryšį</button><button class="btn small sec" id="btnResend">Siųsti viską iš naujo</button></div>
+    <div class="note" style="margin-top:8px">Duomenys saugomi tik šioje naršyklėje (Bluefy). Eksportuoti galite skiltyje „Grafikai“.</div>
   </div>
 
   <div class="card">
@@ -327,12 +365,13 @@
   <button data-tab="drive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4"/><path d="M3.5 18a9 9 0 1 1 17 0"/></svg>Vairuoti</button>
   <button data-tab="battery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2"/><path d="M7 10v4M10.5 10v4"/></svg>Baterija</button>
   <button data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistika</button>
+  <button data-tab="charts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>Grafikai</button>
   <button data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Daugiau</button>
 </nav>
 
 <script>
 (() => {
-  const APP_VERSION = 11, APP_DATE = '2026-11-01';
+  const APP_VERSION = 12, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -377,6 +416,7 @@
     document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
     document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
     SET.tab=name; saveSet(); window.scrollTo(0,0);
+    if (name==='charts' && typeof renderCharts==='function') renderCharts();
   }
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 
@@ -604,7 +644,7 @@
   }
   function onDisconnected(){
     running=false; trip=null; chg=null; wake();
-    log('Atsijungta'); syncSoon();
+    log('Atsijungta');
     if (!manualStop && SET.autoReconnect && device){ setStatus('Jungiamasi iš naujo…','busy'); scheduleReconnect(); }
     else { setStatus('Atsijungta',''); $('btnConn').textContent='Prisijungti prie automobilio'; $('connRow').style.display=''; }
   }
@@ -645,9 +685,9 @@
   }
   function track(){
     const soc = S.socDisp ?? S.socBms;
-    if (trip && Date.now()-(trip.t1||trip.t0) > 10*60e3) { trip=null; syncSoon(); } // long pause -> new trip
+    if (trip && Date.now()-(trip.t1||trip.t0) > 10*60e3) { trip=null; } // long pause -> new trip
     if (S.charging){
-      if (trip) { trip=null; syncSoon(); }
+      if (trip) { trip=null; }
       if (!chg) chg = { id:Date.now(), t0:Date.now(), cec0:S.cec, soc0:soc };
       Object.assign(chg, { t1:Date.now(), cec1:S.cec, soc1:soc, type: S.dcPlug ? 'DC' : 'AC' });
       if (S.cec!=null && chg.cec1-chg.cec0 >= 0.1 && throttle('chg', 10e3)){
@@ -655,7 +695,7 @@
         list.unshift({...chg}); LS.set('ioniqCharges', list.slice(0,2000));
       }
     } else {
-      if (chg) { chg=null; syncSoon(); }
+      if (chg) { chg=null; }
       if (S.ced!=null){
         if (!trip) trip = { id:Date.now(), t0:Date.now(), odo0:S.odo??null, ced0:S.ced, cec0:S.cec, soc0:soc };
         if (trip.odo0==null && S.odo!=null) trip.odo0 = S.odo;
@@ -751,7 +791,8 @@
 
     // STATS
     renderStats(avgCons);
-    renderSyncInfo();
+    renderDataInfo();
+    if (SET.tab==='charts' && throttle('charts', 5000)) renderCharts();
   }
 
   function renderAlerts(){
@@ -768,7 +809,20 @@
 
   // ---------- cells ----------
   let selCell = null;
-  const cellCls = dev => { const x=Math.abs(dev); return x<30 ? 'c0' : x<=50 ? 'c1' : 'c2'; };
+  // continuous colour: green around the average, yellow -> red below it, teal above it
+  function cellColor(dev){
+    const a = Math.abs(dev), mix = (c1,p,c2) => `color-mix(in srgb, ${c1} ${Math.round(p)}%, ${c2})`;
+    if (a<=10) return mix('var(--gain)',26,'var(--s2)');
+    if (dev<0){
+      if (a<=30){ const k=(a-10)/20; return mix(mix('var(--warn)',k*100,'var(--gain)'), 28+k*14, 'var(--s2)'); }
+      const k=Math.min(1,(a-30)/30); return mix(mix('var(--bad)',k*100,'var(--warn)'), 42+k*22, 'var(--s2)');
+    }
+    const k=Math.min(1,(a-10)/40); return mix(mix('var(--acc)',k*100,'var(--gain)'), 26+k*18, 'var(--s2)');
+  }
+  $('cbar').innerHTML = [-60,-50,-40,-30,-20,-10,0,10,20,30,40,50,60].map(d=>`<i style="background:${cellColor(d)}"></i>`).join('');
+  function syncCellMode(){ document.querySelectorAll('#cellMode button').forEach(b=>b.classList.toggle('on', b.dataset.m===(SET.cellMode||'V'))); }
+  document.querySelectorAll('#cellMode button').forEach(b=>b.onclick=()=>{ SET.cellMode=b.dataset.m; saveSet(); syncCellMode(); renderCells(); });
+  syncCellMode();
   function renderCells(){
     const cells = S.cells || [];
     const vals = cells.filter(v=>v!=null);
@@ -791,11 +845,13 @@
     $('cBadge').textContent=icon; $('cBadge').style.background=bg; $('cVerdict').textContent=t1; $('cVerdictSub').textContent=t2;
     const grid = $('cells');
     if (!vals.length){ grid.innerHTML = Array.from({length:96},(_,i)=>`<button class="cn"><span class="n">${i+1}</span><span class="d">–</span></button>`).join(''); return; }
+    const modeV = (SET.cellMode||'V')==='V';
     grid.innerHTML = cells.map((v,i)=>{
       if (v==null) return `<button class="cn" data-i="${i}"><span class="n">${i+1}</span><span class="d">–</span></button>`;
       const dev = Math.round((v-avg)*1000);
-      const txt = Math.abs(dev)<10 ? '·' : (dev>0?'+':'')+dev;
-      return `<button data-i="${i}" class="${cellCls(dev)} ${selCell===i?'sel':''}"><span class="n">${i+1}</span><span class="d">${txt}</span></button>`;
+      const txt = modeV ? f(v,2) : (Math.abs(dev)<10 ? '0' : (dev>0?'+':'')+dev);
+      const mark = (i+1===mnNo && spread>0) ? 'mn' : (i+1===mxNo && spread>0) ? 'mx' : '';
+      return `<button data-i="${i}" class="${mark} ${selCell===i?'sel':''}" style="background:${cellColor(dev)}"><span class="n">${i+1}</span><span class="d">${txt}</span></button>`;
     }).join('');
     if (selCell!=null){
       const v = cells[selCell];
@@ -863,147 +919,166 @@
     clearArm=false; LS.set('ioniqTrips',[]); trip=null; $('btnClearTrips').textContent='Išvalyti kelionių istoriją'; render();
   };
 
-  // ---------- Google Sheets sync ----------
-  function syncCfg(){ return LS.get('ioniqSync', null); }
-  (function readSetupHash(){
-    const m = location.hash.match(/^#cfg=([A-Za-z0-9_\-]+={0,2})$/);
-    if (!m) return;
-    try{
-      const [url, token] = atob(m[1].replace(/-/g,'+').replace(/_/g,'/')).split('|');
-      if (/^https:\/\/script\.google\.com\/macros\/s\//.test(url) && token){ LS.set('ioniqSync', {url, token}); log('Google Sheets sinchronizacija nustatyta'); }
-    }catch(e){}
-    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; }
-  })();
-  function tripPayload(t){
+  // ---------- export helpers ----------
+  function tripRow(t){
     const st=tripStats(t), d=new Date(t.t0);
-    return { id:String(t.id), start:stamp(t.t0), end:stamp(t.t1||t.t0), day:ymd(d), week:mondayOf(d), month:ymd(d).slice(0,7),
-      km:st.km, used:(t.ced1-t.ced0), regen:(t.cec1-t.cec0), net:st.kwh, cons:st.cons, soc0:t.soc0, soc1:t.soc1, odo0:t.odo0, odo1:t.odo1 };
+    return [stamp(t.t0), stamp(t.t1||t.t0), ymd(d), mondayOf(d), ymd(d).slice(0,7), rnd(st.km,1), rnd(t.ced1-t.ced0,2), rnd(t.cec1-t.cec0,2), rnd(st.kwh,2), rnd(st.cons,1), rnd(t.soc0,1), rnd(t.soc1,1), t.odo0??null, t.odo1??null];
   }
-  function chgPayload(c){
+  const TRIP_HEAD = ['Pradžia','Pabaiga','Diena','Savaitė (pirmad.)','Mėnuo','Km','Sunaudota kWh','Atgauta kWh','Grynai kWh','kWh/100 km','SOC pradžia %','SOC pabaiga %','Rida pradžia','Rida pabaiga'];
+  function chgRow(c){
     const d=new Date(c.t0), kwh=(c.cec1-c.cec0)||0, min=((c.t1||c.t0)-c.t0)/60000;
-    return { id:String(c.id), start:stamp(c.t0), end:stamp(c.t1||c.t0), day:ymd(d), week:mondayOf(d), month:ymd(d).slice(0,7),
-      kwh, soc0:c.soc0, soc1:c.soc1, type:c.type||'', avgKw: min>=1 ? kwh/(min/60) : null, minutes:min };
+    return [stamp(c.t0), stamp(c.t1||c.t0), ymd(d), c.type||'', rnd(kwh,2), rnd(c.soc0,1), rnd(c.soc1,1), min>=1 ? rnd(kwh/(min/60),1) : null, Math.round(min)];
   }
-  // JSONP: works across origins and returns a confirmation from the sheet
-  function jsonp(url, params, ms=25000){
-    return new Promise((resolve, reject)=>{
-      const cb = '__ioniq'+Date.now()+Math.floor(Math.random()*1e4);
-      const sc = document.createElement('script');
-      const done = () => { clearTimeout(tm); try{ delete window[cb]; }catch(_){ window[cb]=undefined; } sc.remove(); };
-      const tm = setTimeout(()=>{ done(); reject(new Error('neatsako per '+(ms/1000)+' s')); }, ms);
-      window[cb] = d => { done(); resolve(d); };
-      sc.onerror = () => { done(); reject(new Error('nepavyko pasiekti Google')); };
-      sc.src = url + '?' + new URLSearchParams({...params, callback: cb}).toString();
-      document.head.appendChild(sc);
-    });
+  const CHG_HEAD = ['Pradžia','Pabaiga','Diena','Tipas','Įkrauta kWh','SOC nuo %','SOC iki %','Vid. galia kW','Trukmė, min'];
+  const rnd = (v,d) => (v==null||!isFinite(v)) ? null : Number(Number(v).toFixed(d));
+  // group trips and charges by a key (day / week / month)
+  function groupBy(keyOf){
+    const g = {};
+    const get = k => g[k] || (g[k] = { km:0, kwh:0, ch:0, n:0 });
+    for (const t of H('ioniqTrips')){ const st=tripStats(t), r=get(keyOf(new Date(t.t0))); r.km+=st.km; r.kwh+=st.kwh; r.n++; }
+    for (const c of H('ioniqCharges')){ get(keyOf(new Date(c.t0))).ch += (c.cec1-c.cec0)||0; }
+    return g;
   }
-  let lastSyncErr = null;
-  // several ways to reach Google; the first that works is remembered
-  async function viaFetch(url, params, ms=20000){
-    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), ms);
+  function sumRows(keyOf){
+    const g = groupBy(keyOf);
+    return Object.keys(g).sort().reverse().map(k=>{ const r=g[k]; return [k, r.n, rnd(r.km,1), rnd(r.kwh,2), r.km>=1 ? rnd(r.kwh/r.km*100,1) : null, rnd(r.ch,2)]; });
+  }
+  const SUM_HEAD = p => [p,'Kelionių','Km','Sunaudota kWh','kWh/100 km','Įkrauta kWh'];
+
+  // ---------- charts ----------
+  const PERIODS = {
+    d: { n:30, key:d=>ymd(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-i); return x; }, lab:k=>+k.slice(8), every:5 },
+    w: { n:12, key:d=>mondayOf(d), step:(d,i)=>{ const x=new Date(d); x.setDate(x.getDate()-7*i); return x; }, lab:k=>k.slice(8)+'.'+k.slice(5,7), every:3 },
+    m: { n:12, key:d=>ymd(d).slice(0,7), step:(d,i)=>{ const x=new Date(d.getFullYear(), d.getMonth()-i, 15); return x; }, lab:k=>MONTHS[+k.slice(5,7)-1].replace('.',''), every:2 }
+  };
+  function syncPeriod(){ document.querySelectorAll('#chPeriod button').forEach(b=>b.classList.toggle('on', b.dataset.p===(SET.chPeriod||'d'))); }
+  document.querySelectorAll('#chPeriod button').forEach(b=>b.onclick=()=>{ SET.chPeriod=b.dataset.p; saveSet(); syncPeriod(); renderCharts(); });
+  syncPeriod();
+  // bars: series = [{vals, color}], several series are drawn side by side
+  function bars(keys, labOf, every, series, opts={}){
+    const W=320, Hh=130, top=14, bot=18, n=keys.length;
+    const max = Math.max(opts.min||1, ...series.flatMap(s=>s.vals.map(v=>v||0)));
+    const PW=W-26, nice = niceMax(max), slot=PW/n, gap=Math.max(1, slot*0.22), bw=(slot-gap)/series.length;
+    let g = '';
+    for (const y of [0.5,1]) g += `<line x1="0" x2="${PW}" y1="${top+(Hh-top-bot)*(1-y)}" y2="${top+(Hh-top-bot)*(1-y)}" stroke="var(--line)"/><text x="${W}" y="${top+(Hh-top-bot)*(1-y)+3}" text-anchor="end">${fmtNum(nice*y)}</text>`;
+    series.forEach((s,si)=>s.vals.forEach((v,i)=>{ if (!v) return; const h=Math.max(1.5,(Hh-top-bot)*v/nice); g += `<rect x="${i*slot+gap/2+si*bw}" y="${Hh-bot-h}" width="${Math.max(1,bw-0.5)}" height="${h}" rx="${Math.min(3,bw/3)}" fill="${s.color}"><title>${keys[i]}: ${fmtNum(v)}</title></rect>`; }));
+    if (opts.avg!=null) g += `<line x1="0" x2="${PW}" y1="${Hh-bot-(Hh-top-bot)*opts.avg/nice}" y2="${Hh-bot-(Hh-top-bot)*opts.avg/nice}" stroke="var(--warn)" stroke-dasharray="4 4"/>`;
+    keys.forEach((k,i)=>{ if ((n-1-i)%every===0) g += `<text x="${i*slot+slot/2}" y="${Hh-4}" text-anchor="middle">${labOf(k)}</text>`; });
+    g += `<line x1="0" x2="${PW}" y1="${Hh-bot}" y2="${Hh-bot}" stroke="var(--dim)"/><text x="${W}" y="${Hh-bot+3}" text-anchor="end">0</text>`;
+    return `<svg viewBox="0 0 ${W} ${Hh}" style="height:${Hh*1.05}px">${g}</svg>`;
+  }
+  function niceMax(v){ const e=Math.pow(10,Math.floor(Math.log10(v))), m=v/e; return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*e; }
+  const fmtNum = v => v>=100 ? Math.round(v).toLocaleString('lt-LT') : Number.isInteger(v) ? String(v) : f(v,1);
+  function renderCharts(){
+    const P = PERIODS[SET.chPeriod||'d'], now = new Date();
+    const keys = Array.from({length:P.n},(_,i)=>P.key(P.step(now, P.n-1-i)));
+    const g = groupBy(P.key);
+    const km = keys.map(k=>g[k]?g[k].km:0), used = keys.map(k=>g[k]?g[k].kwh:0), ch = keys.map(k=>g[k]?g[k].ch:0);
+    const cons = keys.map(k=>g[k] && g[k].km>=1 ? g[k].kwh/g[k].km*100 : 0);
+    const tkm = km.reduce((a,b)=>a+b,0), tused = used.reduce((a,b)=>a+b,0), tch = ch.reduce((a,b)=>a+b,0), days = keys.filter((k,i)=>km[i]>0).length;
+    const avg = tkm>=1 ? tused/tkm*100 : null;
+    const unit = {d:'d.',w:'sav.',m:'mėn.'}[SET.chPeriod||'d'];
+    setH('chKmTot', `<span>Iš viso <b>${f(tkm,0)}</b> km</span><span>Vid. <b>${f(days?tkm/days:0,0)}</b> km/${unit} (kai važiuota)</span>`);
+    setH('chKwhTot', `<span>Sunaudota <b>${f(tused,1)}</b></span><span>Įkrauta <b>${f(tch,1)}</b></span>`);
+    setH('chConsTot', `<span>Vidurkis <b>${avg==null?'–':f(avg,1)}</b> kWh/100 km</span>${avg?`<span>≈ <b>${Math.round(USABLE_KWH*((S.soh??100)/100)/avg*100)}</b> km su pilna baterija</span>`:''}`);
+    const empty = '<div class="note">Dar nėra duomenų šiam laikotarpiui. Kelionės įrašomos, kai važiuojant programėlė prisijungusi.</div>';
+    $('chKm').innerHTML = tkm ? bars(keys, P.lab, P.every, [{vals:km, color:'var(--acc)'}]) : empty;
+    $('chKwh').innerHTML = (tused||tch) ? bars(keys, P.lab, P.every, [{vals:used, color:'var(--use)'},{vals:ch, color:'var(--gain)'}]) : empty;
+    $('chCons').innerHTML = avg ? bars(keys, P.lab, P.every, [{vals:cons, color:'var(--acc)'}], {avg, min:20}) + '<div class="glab"><span></span><span>punktyras – vidurkis</span></div>' : empty;
+    const sh = H('ioniqSoh');
+    if (sh.length>=2){
+      const W=320,Hh=100, mn=Math.min(...sh.map(x=>x.soh))-0.5, mx=Math.max(...sh.map(x=>x.soh))+0.5;
+      const t0=new Date(sh[0].d).getTime(), t1=new Date(sh[sh.length-1].d).getTime()||t0+1;
+      const xy = sh.map(x=>[((new Date(x.d).getTime()-t0)/Math.max(1,t1-t0))*W, 8+(Hh-24)*(1-(x.soh-mn)/(mx-mn))]);
+      $('chSoh').innerHTML = `<svg viewBox="-4 0 ${W+8} ${Hh}" style="height:${Hh}px"><polyline fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round" points="${xy.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}"/>${xy.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="var(--acc)"/>`).join('')}<text x="0" y="${Hh-2}">${sh[0].d}</text><text x="${W}" y="${Hh-2}" text-anchor="end">${sh[sh.length-1].d}</text></svg><div class="ctot num" style="margin-top:8px"><span>Buvo <b>${f(sh[0].soh,1)} %</b></span><span>Dabar <b>${f(sh[sh.length-1].soh,1)} %</b></span></div>`;
+    } else $('chSoh').innerHTML = '<div class="note">'+(sh.length ? `SOH ${f(sh[0].soh,1)} % (${sh[0].d}). Grafikas atsiras, kai bus kelių dienų matavimų.` : 'Įrašoma kartą per dieną, kai prisijungta prie automobilio.')+'</div>';
+  }
+
+  // ---------- export: xlsx (zip without compression), csv, clipboard ----------
+  const CRC = (()=>{ const t=new Uint32Array(256); for (let n=0;n<256;n++){ let c=n; for (let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+  const crc32 = d => { let c=0xFFFFFFFF; for (let i=0;i<d.length;i++) c = CRC[(c^d[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+  function zip(files){
+    const parts=[], cd=[]; let off=0;
+    const le = (n,b) => { const a=[]; for (let i=0;i<b;i++) a.push((n>>>(8*i))&255); return a; };
+    for (const fl of files){
+      const name=enc.encode(fl.name), data=typeof fl.data==='string'?enc.encode(fl.data):fl.data, crc=crc32(data);
+      const common = [...le(20,2), ...le(0x0800,2), ...le(0,2), ...le(0,2), ...le(0x21,2), ...le(crc,4), ...le(data.length,4), ...le(data.length,4), ...le(name.length,2), ...le(0,2)];
+      const lh = new Uint8Array([...le(0x04034b50,4), ...common]);
+      parts.push(lh, name, data);
+      cd.push(new Uint8Array([...le(0x02014b50,4), ...le(20,2), ...common, ...le(0,2), ...le(0,2), ...le(0,2), ...le(0,4), ...le(off,4)]), name);
+      off += lh.length + name.length + data.length;
+    }
+    const cdSize = cd.reduce((a,b)=>a+b.length,0);
+    const end = new Uint8Array([...le(0x06054b50,4), ...le(0,2), ...le(0,2), ...le(files.length,2), ...le(files.length,2), ...le(cdSize,4), ...le(off,4), ...le(0,2)]);
+    return new Blob([...parts, ...cd, end], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  }
+  const xe = v => String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const colL = i => { let s=''; i++; while (i){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; };
+  function sheetXml(head, rows){
+    const all=[head, ...rows];
+    const widths = head.map((h,ci)=>Math.min(40, Math.max(8, ...all.map(r=>String(r[ci]??'').length+2))));
+    const rowsXml = all.map((r,ri)=>`<row r="${ri+1}">`+r.map((v,ci)=>{
+      if (v==null || v==='') return '';
+      const ref = colL(ci)+(ri+1), st = ri===0 ? ' s="1"' : '';
+      return typeof v==='number' ? `<c r="${ref}"${st}><v>${v}</v></c>` : `<c r="${ref}"${st} t="inlineStr"><is><t>${xe(v)}</t></is></c>`;
+    }).join('')+'</row>').join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rowsXml}</sheetData></worksheet>`;
+  }
+  function buildXlsx(sheets){
+    const files = [
+      {name:'[Content_Types].xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`},
+      {name:'_rels/.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+      {name:'xl/workbook.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((sh,i)=>`<sheet name="${xe(sh.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`},
+      {name:'xl/_rels/workbook.xml.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+      {name:'xl/styles.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8F3F1"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`},
+      ...sheets.map((sh,i)=>({name:`xl/worksheets/sheet${i+1}.xml`, data:sheetXml(sh.head, sh.rows)}))
+    ];
+    return zip(files);
+  }
+  function allSheets(){
+    const trips = H('ioniqTrips'), charges = H('ioniqCharges');
+    const sheets = [
+      {name:'Kelionės', head:TRIP_HEAD, rows:trips.map(tripRow)},
+      {name:'Krovimai', head:CHG_HEAD, rows:charges.map(chgRow)},
+      {name:'Dienos', head:SUM_HEAD('Diena'), rows:sumRows(d=>ymd(d))},
+      {name:'Savaitės', head:SUM_HEAD('Savaitė (pirmad.)'), rows:sumRows(d=>mondayOf(d))},
+      {name:'Mėnesiai', head:SUM_HEAD('Mėnuo'), rows:sumRows(d=>ymd(d).slice(0,7))},
+    ];
+    const c = S.cells||[], vals=c.filter(v=>v!=null);
+    if (vals.length){ const avg=vals.reduce((a,b)=>a+b,0)/vals.length; sheets.push({name:'Elementai', head:['Nr.','Įtampa, V','Nuokrypis nuo vidurkio, mV'], rows:c.map((v,i)=>[i+1, v==null?null:rnd(v,3), v==null?null:Math.round((v-avg)*1000)])}); }
+    sheets.push({name:'SOH', head:['Data','SOH %'], rows:H('ioniqSoh').map(x=>[x.d, rnd(x.soh,1)])});
+    return sheets;
+  }
+  async function deliver(blob, name){
     try{
-      const r = await fetch(url+'?'+new URLSearchParams(params).toString(), {method:'GET', redirect:'follow', signal:ctl.signal, credentials:'omit'});
-      const t = await r.text();
-      try{ return JSON.parse(t); }catch(_){ throw new Error('HTTP '+r.status+' (ne JSON)'); }
-    } finally { clearTimeout(tm); }
+      const file = new File([blob], name, {type:blob.type});
+      if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); return 'Failas paruoštas – pasirinkite, kur išsaugoti (Failai, Google Drive, el. paštas…).'; }
+    }catch(e){ if (e && e.name==='AbortError') return 'Atšaukta.'; log('Dalinimasis nepavyko: '+errText(e)); }
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 60e3);
+    return 'Failas atsisiųstas: '+name+'. Jei nieko neįvyko – naudokite „Kopijuoti“ mygtukus.';
   }
-  function viaImage(url, params){
-    return new Promise(res=>{ const im = new Image(); const done=()=>res({ok:true, unconfirmed:true}); im.onload=done; im.onerror=done; setTimeout(done, 8000); im.src = url+'?'+new URLSearchParams(params).toString(); });
+  const fname = ext => 'ioniq_'+ymd(new Date())+'.'+ext;
+  const cellTxt = v => v==null ? '' : typeof v==='number' ? String(v).replace('.',',') : String(v);
+  const csvOf = (head, rows) => '﻿'+[head, ...rows].map(r=>r.map(v=>{ const t=cellTxt(v); return /[;"\n]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t; }).join(';')).join('\r\n');
+  const tsvOf = (head, rows) => [head, ...rows].map(r=>r.map(cellTxt).join('\t')).join('\n');
+  async function copyText(t, btn, label){
+    try{ await navigator.clipboard.writeText(t); }
+    catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }finally{ ta.remove(); } }
+    btn.textContent='Nukopijuota ✓'; setTimeout(()=>btn.textContent=label, 2500);
+    $('expRes').textContent='Atidarykite Google Sheets, pasirinkite langelį A1 ir įklijuokite.';
   }
-  // Google Forms route: docs.google.com is reachable even where script.google.com is blocked.
-  // A form submission triggers the same script on Google's side, which writes to the sheet.
-  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeomrgqB9A0GB5sDLuZnpvAabfEz2w7kXdt0UQ8Aj1BBYV4og/formResponse';
-  const FORM_ENTRY = 'entry.1936367335';
-  async function viaForm(body){
-    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), 20000);
-    try{ await fetch(FORM_URL, {method:'POST', mode:'no-cors', credentials:'omit', signal:ctl.signal, body:new URLSearchParams({[FORM_ENTRY]: JSON.stringify(body)})}); return {ok:true, via:'form'}; }
-    finally{ clearTimeout(tm); }
-  }
-  async function formReachable(){
-    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), 15000);
-    try{ await fetch(FORM_URL.replace('formResponse','viewform'), {mode:'no-cors', credentials:'omit', signal:ctl.signal}); return true; }
-    catch(e){ return false; } finally{ clearTimeout(tm); }
-  }
-  const METHODS = { fetch: viaFetch, jsonp: (u,p)=>jsonp(u,p), image: viaImage };
-  let goodMethod = LS.get('ioniqSyncMethod', null);
-  async function call(cfg, params){
-    const order = [goodMethod, 'fetch', 'jsonp'].filter((m,i,a)=>m && m!=='image' && a.indexOf(m)===i);
-    let lastE;
-    for (const m of order){
-      try{ const r = await METHODS[m](cfg.url, params); if (r){ if (goodMethod!==m){ goodMethod=m; LS.set('ioniqSyncMethod', m); log('Sinchronizacijos būdas: '+m); } return r; } }
-      catch(e){ lastE = e; log('Būdas '+m+' nepavyko: '+errText(e)); }
-    }
-    throw lastE || new Error('nepavyko');
-  }
-  async function post(cfg, body){
-    if (navigator.onLine === false){ lastSyncErr='nėra interneto'; return false; }
-    const params = { d: JSON.stringify(body) };
-    if (goodMethod === 'form'){
-      try{ await viaForm(body); lastSyncErr=null; return true; }
-      catch(e){ lastSyncErr = 'Google Forms nepasiekiama ('+errText(e)+')'; log(lastSyncErr); return false; }
-    }
-    try{
-      const r = await call(cfg, params);
-      if (r && r.ok){ lastSyncErr=null; return true; }
-      lastSyncErr = (r && r.error) || 'nežinoma klaida'; log('Lentelė atsakė klaida: '+lastSyncErr); return false;
-    }catch(e){
-      // script.google.com unreachable -> send through Google Forms
-      try{ await viaForm(body); goodMethod='form'; LS.set('ioniqSyncMethod','form'); lastSyncErr=null; log('Išsiųsta per Google Forms'); return true; }
-      catch(e2){ lastSyncErr = 'nepavyko pasiekti Google ('+errText(e2)+')'; log('Sinchronizacija nepavyko: '+lastSyncErr); return false; }
-    }
-  }
-  async function ping(){
-    const cfg = syncCfg();
-    if (!cfg){ $('pingRes').textContent='neprijungta'; return; }
-    $('pingRes').textContent='tikrinama…';
-    const res = [];
-    for (const m of ['fetch','jsonp']){
-      try{ const r = await METHODS[m](cfg.url, { ping:1, token:cfg.token }, 15000); res.push(m+': '+(r && r.ok ? '✓' : ((r&&r.error)||'klaida'))); if (r && r.ok && !goodMethod){ goodMethod=m; LS.set('ioniqSyncMethod', m); } }
-      catch(e){ res.push(m+': '+errText(e)); }
-    }
-    const formOk = await formReachable(); res.push('forms: '+(formOk?'✓':'nepasiekiama'));
-    const okAny = res.some(x=>x.endsWith('✓'));
-    if (!res[0].endsWith('✓') && !res[1].endsWith('✓') && formOk){ goodMethod='form'; LS.set('ioniqSyncMethod','form'); }
-    $('pingRes').innerHTML = '<span style="color:var('+(okAny?'--gain':'--bad')+')">'+(okAny?'veikia ✓':'neveikia')+'</span><div class="note" style="text-align:right">'+res.join('<br>')+'</div>';
-    log('Ryšio patikra: '+res.join(' · '));
-  }
-  $('btnPing').onclick = ping;
-  $('btnResend').onclick = () => syncNow(true).then(()=>{ $('btnResend').textContent = lastSyncErr ? 'Nepavyko' : 'Išsiųsta ✓'; setTimeout(()=>$('btnResend').textContent='Siųsti viską iš naujo',2500); });
-  let syncTimer=null;
-  function syncSoon(){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(false), 3000); }
-  async function syncNow(all){
-    const cfg = syncCfg(); if (!cfg || demoTimer) return;
-    if (navigator.onLine === false){ renderSyncInfo('Nėra interneto – bus išsiųsta vėliau'); return; }
-    const trips = LS.get('ioniqTrips',[]), charges = LS.get('ioniqCharges',[]);
-    const tq = trips.filter(t => all || !t.sent || t.sent < (t.t1||0));
-    const cq = charges.filter(c => all || !c.sent || c.sent < (c.t1||0));
-    if (!tq.length && !cq.length){ LS.set('ioniqSyncAt', Date.now()); renderSyncInfo(); return; }
-    const now = Date.now(); let ok = true;
-    for (let i=0; i<Math.max(tq.length,cq.length) && ok; i+=8){
-      ok = await post(cfg, { token:cfg.token, trips:tq.slice(i,i+8).map(tripPayload), charges:cq.slice(i,i+8).map(chgPayload) });
-    }
-    if (ok){
-      const ids = new Set([...tq,...cq].map(x=>x.id));
-      LS.set('ioniqTrips', LS.get('ioniqTrips',[]).map(t=>ids.has(t.id)?{...t,sent:now}:t));
-      LS.set('ioniqCharges', LS.get('ioniqCharges',[]).map(c=>ids.has(c.id)?{...c,sent:now}:c));
-      LS.set('ioniqSyncAt', now);
-      log(`Išsiųsta į Google Sheets: ${tq.length} kel., ${cq.length} krov.`);
-    }
-    renderSyncInfo();
-  }
-  function renderSyncInfo(msg){
-    const cfg = syncCfg(), at = LS.get('ioniqSyncAt', null);
-    const pend = LS.get('ioniqTrips',[]).filter(t=>!t.sent || t.sent<(t.t1||0)).length + LS.get('ioniqCharges',[]).filter(c=>!c.sent || c.sent<(c.t1||0)).length;
-    $('syncInfo').innerHTML = msg ? msg : !cfg ? 'Neprijungta<div class="note">Atidarykite nustatymo nuorodą</div>' :
-      (!(LS.get('ioniqTrips',[]).length + LS.get('ioniqCharges',[]).length) ? 'Prijungta<div class="note">Dar nėra įrašytų kelionių ar krovimų</div>' : at ? 'Išsiųsta '+stamp(at) : 'Prijungta') + (lastSyncErr ? `<div class="note" style="color:var(--bad)">Klaida: ${lastSyncErr}</div>` : '') + (pend ? `<div class="note">Laukia išsiuntimo: ${pend}</div>` : '<div class="note">Viskas išsiųsta</div>');
-    $('btnSync').disabled = !cfg;
-    $('dataCnt').textContent = LS.get('ioniqTrips',[]).length+' kel., '+LS.get('ioniqCharges',[]).length+' krov.';
+  $('btnXlsx').onclick = async () => { const n=H('ioniqTrips').length+H('ioniqCharges').length; $('expRes').textContent = await deliver(buildXlsx(allSheets()), fname('xlsx')) + (n?'':' (kelionių dar nėra – failas beveik tuščias)'); };
+  $('btnCsv').onclick = async () => { $('expRes').textContent = await deliver(new Blob([csvOf(TRIP_HEAD, H('ioniqTrips').map(tripRow))],{type:'text/csv'}), fname('csv')); };
+  $('btnCopyT').onclick = () => copyText(tsvOf(TRIP_HEAD, H('ioniqTrips').map(tripRow)), $('btnCopyT'), 'Kopijuoti kelionių lentelę');
+  $('btnCopyM').onclick = () => copyText(tsvOf(SUM_HEAD('Mėnuo'), sumRows(d=>ymd(d).slice(0,7))), $('btnCopyM'), 'Kopijuoti mėnesių suvestinę');
+
+  function renderDataInfo(){
+    $('dataCnt').textContent = H('ioniqTrips').length+' kel., '+H('ioniqCharges').length+' krov.';
     $('odoState').innerHTML = S.odo!=null ? S.odo.toLocaleString('lt-LT')+' km ✓' : (running ? '<span style="color:var(--warn)">nenuskaityta</span>' : '–');
   }
-  $('btnSync').onclick = () => syncNow(false).then(()=>{ $('btnSync').textContent = lastSyncErr ? 'Nepavyko' : 'Išsiųsta ✓'; setTimeout(()=>$('btnSync').textContent='Siųsti dabar',2500); });
-  setInterval(()=>{ if (running) syncNow(false); }, 120e3);
-  window.addEventListener('online', ()=>syncNow(false));
-  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden') syncNow(false); });
+  // the Google Sheets link is no longer used
+  ['ioniqSync','ioniqSyncAt','ioniqSyncMethod','ioniqResent10','ioniqResent11'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
 
   // ---------- persistence (last known values) ----------
   function save(){ try{ localStorage.setItem('ioniqLast', JSON.stringify(S)); }catch(e){} }
@@ -1062,8 +1137,6 @@
   log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
   checkUpdate(); setInterval(checkUpdate, 10*60e3);
-  // older versions could mark trips as sent although Google never got them -> resend everything once
-  if (syncCfg()) { ping(); const once = !LS.get('ioniqResent11', false); syncNow(once).then(()=>{ if (once && !lastSyncErr) LS.set('ioniqResent11', true); }); }
 })();
 </script>
 </body>
