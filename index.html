@@ -332,7 +332,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 10, APP_DATE = '2026-11-01';
+  const APP_VERSION = 11, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -910,6 +910,20 @@
   function viaImage(url, params){
     return new Promise(res=>{ const im = new Image(); const done=()=>res({ok:true, unconfirmed:true}); im.onload=done; im.onerror=done; setTimeout(done, 8000); im.src = url+'?'+new URLSearchParams(params).toString(); });
   }
+  // Google Forms route: docs.google.com is reachable even where script.google.com is blocked.
+  // A form submission triggers the same script on Google's side, which writes to the sheet.
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeomrgqB9A0GB5sDLuZnpvAabfEz2w7kXdt0UQ8Aj1BBYV4og/formResponse';
+  const FORM_ENTRY = 'entry.1936367335';
+  async function viaForm(body){
+    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), 20000);
+    try{ await fetch(FORM_URL, {method:'POST', mode:'no-cors', credentials:'omit', signal:ctl.signal, body:new URLSearchParams({[FORM_ENTRY]: JSON.stringify(body)})}); return {ok:true, via:'form'}; }
+    finally{ clearTimeout(tm); }
+  }
+  async function formReachable(){
+    const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), 15000);
+    try{ await fetch(FORM_URL.replace('formResponse','viewform'), {mode:'no-cors', credentials:'omit', signal:ctl.signal}); return true; }
+    catch(e){ return false; } finally{ clearTimeout(tm); }
+  }
   const METHODS = { fetch: viaFetch, jsonp: (u,p)=>jsonp(u,p), image: viaImage };
   let goodMethod = LS.get('ioniqSyncMethod', null);
   async function call(cfg, params){
@@ -924,15 +938,18 @@
   async function post(cfg, body){
     if (navigator.onLine === false){ lastSyncErr='nėra interneto'; return false; }
     const params = { d: JSON.stringify(body) };
+    if (goodMethod === 'form'){
+      try{ await viaForm(body); lastSyncErr=null; return true; }
+      catch(e){ lastSyncErr = 'Google Forms nepasiekiama ('+errText(e)+')'; log(lastSyncErr); return false; }
+    }
     try{
       const r = await call(cfg, params);
       if (r && r.ok){ lastSyncErr=null; return true; }
       lastSyncErr = (r && r.error) || 'nežinoma klaida'; log('Lentelė atsakė klaida: '+lastSyncErr); return false;
     }catch(e){
-      // last resort: fire-and-forget (no confirmation)
-      await viaImage(cfg.url, params);
-      try{ navigator.sendBeacon && navigator.sendBeacon(cfg.url, new Blob([JSON.stringify(body)],{type:'text/plain'})); }catch(_){}
-      lastSyncErr = 'išsiųsta be patvirtinimo ('+errText(e)+')'; log('Išsiųsta be patvirtinimo'); return true;
+      // script.google.com unreachable -> send through Google Forms
+      try{ await viaForm(body); goodMethod='form'; LS.set('ioniqSyncMethod','form'); lastSyncErr=null; log('Išsiųsta per Google Forms'); return true; }
+      catch(e2){ lastSyncErr = 'nepavyko pasiekti Google ('+errText(e2)+')'; log('Sinchronizacija nepavyko: '+lastSyncErr); return false; }
     }
   }
   async function ping(){
@@ -944,8 +961,10 @@
       try{ const r = await METHODS[m](cfg.url, { ping:1, token:cfg.token }, 15000); res.push(m+': '+(r && r.ok ? '✓' : ((r&&r.error)||'klaida'))); if (r && r.ok && !goodMethod){ goodMethod=m; LS.set('ioniqSyncMethod', m); } }
       catch(e){ res.push(m+': '+errText(e)); }
     }
+    const formOk = await formReachable(); res.push('forms: '+(formOk?'✓':'nepasiekiama'));
     const okAny = res.some(x=>x.endsWith('✓'));
-    $('pingRes').innerHTML = '<span style="color:var('+(okAny?'--gain':'--warn,#d9a400')+')">'+(okAny?'veikia ✓':'siunčiama be patvirtinimo')+'</span><div class="note" style="text-align:right">'+res.join('<br>')+'</div>';
+    if (!res[0].endsWith('✓') && !res[1].endsWith('✓') && formOk){ goodMethod='form'; LS.set('ioniqSyncMethod','form'); }
+    $('pingRes').innerHTML = '<span style="color:var('+(okAny?'--gain':'--bad')+')">'+(okAny?'veikia ✓':'neveikia')+'</span><div class="note" style="text-align:right">'+res.join('<br>')+'</div>';
     log('Ryšio patikra: '+res.join(' · '));
   }
   $('btnPing').onclick = ping;
@@ -1044,7 +1063,7 @@
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
   checkUpdate(); setInterval(checkUpdate, 10*60e3);
   // older versions could mark trips as sent although Google never got them -> resend everything once
-  if (syncCfg()) { ping(); const once = !LS.get('ioniqResent10', false); syncNow(once).then(()=>{ if (once && !lastSyncErr) LS.set('ioniqResent10', true); }); }
+  if (syncCfg()) { ping(); const once = !LS.get('ioniqResent11', false); syncNow(once).then(()=>{ if (once && !lastSyncErr) LS.set('ioniqResent11', true); }); }
 })();
 </script>
 </body>
