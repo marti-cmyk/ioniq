@@ -68,7 +68,7 @@
   .gauge i{position:absolute;top:0;bottom:0;border-radius:7px;transition:all .5s}
   .gauge .z{position:absolute;top:0;bottom:0;width:2px;background:var(--dim)}
   .glab{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
-  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
   .chip{background:var(--s1);border-radius:16px;padding:12px 10px;text-align:center}
   .chip .v{font-size:21px;font-weight:500}
   .chip .v small{font-size:12px;color:var(--mut);font-weight:400}
@@ -113,6 +113,11 @@
   .hrow h2{margin:0}
   .c0{background:color-mix(in srgb,var(--gain) 22%,var(--s2))} .c1{background:color-mix(in srgb,var(--warn) 40%,var(--s2))} .c2{background:color-mix(in srgb,var(--bad) 55%,var(--s2))} .cn{background:var(--s2);opacity:.4}
   .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:10px}
+  .tires{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:relative}
+  .tire{background:var(--s2);border-radius:14px;padding:10px 12px}
+  .tire .l{font-size:11.5px;color:var(--mut)} .tire .v{font-size:22px;font-weight:500;margin-top:2px} .tire .v small{font-size:12px;color:var(--mut);font-weight:400}
+  .tire .t{font-size:12px;color:var(--mut)}
+  .tire.lo{background:color-mix(in srgb,var(--bad) 22%,var(--s2))} .tire.mid{background:color-mix(in srgb,var(--warn) 22%,var(--s2))}
   /* charts */
   .chart svg{width:100%;display:block}
   .chart text{fill:var(--mut);font-size:10px;font-family:inherit}
@@ -158,7 +163,7 @@
   details summary{cursor:pointer;color:var(--mut);font-size:13.5px}
 
   /* tab bar */
-  nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:5}
+  nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:5}
   nav button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:var(--dim);font-size:11px;font-weight:500}
   nav button svg{width:23px;height:23px}
   nav button.on{color:var(--acc)}
@@ -215,13 +220,24 @@
     <div class="glab"><span>−50</span><span>0</span><span>+100 kW</span></div>
   </div>
 
+  <div class="alerts" id="alerts"></div>
+
   <div class="chips" style="margin-bottom:12px">
     <div class="chip"><div class="v num" id="tripKm">–</div><div class="l">Kelionė, km</div></div>
-    <div class="chip"><div class="v num" id="tripCons">–</div><div class="l">kWh/100 km</div></div>
+    <div class="chip"><div class="v num" id="tripCons">–</div><div class="l">kWh/100</div></div>
     <div class="chip"><div class="v num" id="battT">–</div><div class="l">Baterija</div></div>
+    <div class="chip"><div class="v num" id="outT">–</div><div class="l">Lauke</div></div>
   </div>
 
-  <div class="alerts" id="alerts"></div>
+  <div class="card" id="tireCard" style="display:none">
+    <h2>Padangos</h2>
+    <div class="tires num">
+      <div class="tire" id="tFL"></div><div class="tire" id="tFR"></div>
+      <div class="tire" id="tRL"></div><div class="tire" id="tRR"></div>
+    </div>
+    <div class="note" id="tireNote" style="margin-top:8px"></div>
+  </div>
+
 </section>
 
 <!-- ============ BATTERY ============ -->
@@ -286,6 +302,14 @@
 <!-- ============ STATS ============ -->
 <section class="tab" id="tab-stats">
   <div class="ptabs num" id="periods" style="margin-bottom:12px"></div>
+  <div class="hrow"><div class="seg2" id="chPeriod"><button data-p="h">Diena</button><button data-p="w">Savaitė</button><button data-p="d">30 d.</button><button data-p="m6">6 mėn.</button><button data-p="m">12 mėn.</button></div></div>
+  <div class="note" id="chPerNote" style="margin:-4px 0 10px 2px"></div>
+  <div class="card chart"><h2>Nuvažiuota, km</h2><div class="ctot num" id="chKmTot"></div><div id="chKm"></div></div>
+  <div class="card chart"><h2>Energija, kWh</h2><div class="ctot num" id="chKwhTot"></div><div id="chKwh"></div>
+    <div class="legend"><span><i style="background:var(--use)"></i>sunaudota</span><span><i style="background:var(--gain)"></i>įkrauta</span></div></div>
+  <div class="card chart"><h2>Sąnaudos, kWh/100 km</h2><div class="ctot num" id="chConsTot"></div><div id="chCons"></div></div>
+  <div class="card chart"><h2>Sąnaudos pagal lauko temperatūrą</h2><div id="chTemp"></div></div>
+  <div class="card chart"><h2>Baterijos sveikata (SOH)</h2><div id="chSoh"></div></div>
   <div class="card">
     <h2>Pagal mėnesius</h2>
     <div id="months" class="num"></div>
@@ -300,17 +324,6 @@
     <button class="link" id="btnMoreTrips" style="display:none">Rodyti daugiau</button>
     <button class="link" id="btnClearTrips">Išvalyti kelionių istoriją</button>
   </div>
-</section>
-
-<!-- ============ CHARTS ============ -->
-<section class="tab" id="tab-charts">
-  <div class="hrow"><div class="seg2" id="chPeriod"><button data-p="h">Diena</button><button data-p="w">Savaitė</button><button data-p="d">30 d.</button><button data-p="m6">6 mėn.</button><button data-p="m">12 mėn.</button></div></div>
-  <div class="note" id="chPerNote" style="margin:-4px 0 10px 2px"></div>
-  <div class="card chart"><h2>Nuvažiuota, km</h2><div class="ctot num" id="chKmTot"></div><div id="chKm"></div></div>
-  <div class="card chart"><h2>Energija, kWh</h2><div class="ctot num" id="chKwhTot"></div><div id="chKwh"></div>
-    <div class="legend"><span><i style="background:var(--use)"></i>sunaudota</span><span><i style="background:var(--gain)"></i>įkrauta</span></div></div>
-  <div class="card chart"><h2>Sąnaudos, kWh/100 km</h2><div class="ctot num" id="chConsTot"></div><div id="chCons"></div></div>
-  <div class="card chart"><h2>Baterijos sveikata (SOH)</h2><div id="chSoh"></div></div>
   <div class="card">
     <h2>Eksportas</h2>
     <div class="note">Atsisiųskite duomenis ir atidarykite su Excel arba Google Sheets (Sheets: Failas → Importuoti → Įkelti).</div>
@@ -349,7 +362,17 @@
     <h2>Duomenys</h2>
     <div class="kv"><span>Įrašyta telefone</span><b class="num" id="dataCnt">–</b></div>
     <div class="kv"><span>Rida (reikalinga kelionėms)</span><b class="num" id="odoState">–</b></div>
-    <div class="note" style="margin-top:8px">Duomenys saugomi tik šioje naršyklėje (Bluefy). Eksportuoti galite skiltyje „Grafikai“.</div>
+    <div class="kv"><span>Paskutinė kopija</span><b class="num" id="bkState">–</b></div>
+    <div class="note" style="margin-top:8px">Duomenys saugomi tik šioje naršyklėje (Bluefy). Jei ją ištrinsite ar pakeisite telefoną, istorija dings – todėl kartais pasidarykite kopiją. Excel failą rasite skiltyje „Statistika“.</div>
+    <div class="row" style="margin-top:12px"><button class="btn small" id="btnBackup">Išsaugoti kopiją</button><button class="btn small sec" id="btnRestore">Atkurti iš kopijos</button></div>
+    <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
+    <div class="note" id="bkRes" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Būsena</h2>
+    <div class="kv"><span>Ekrano užgesimo blokavimas</span><b id="wakeState">–</b></div>
+    <div class="kv"><span>Veikimas be interneto</span><b id="swState">–</b></div>
   </div>
 
   <div class="card">
@@ -372,13 +395,12 @@
   <button data-tab="drive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4"/><path d="M3.5 18a9 9 0 1 1 17 0"/></svg>Vairuoti</button>
   <button data-tab="battery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2"/><path d="M7 10v4M10.5 10v4"/></svg>Baterija</button>
   <button data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistika</button>
-  <button data-tab="charts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>Grafikai</button>
   <button data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Daugiau</button>
 </nav>
 
 <script>
 (() => {
-  const APP_VERSION = 16, APP_DATE = '2026-11-01';
+  const APP_VERSION = 17, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -423,7 +445,7 @@
     document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
     document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
     SET.tab=name; saveSet(); window.scrollTo(0,0);
-    if (name==='charts' && typeof renderCharts==='function') renderCharts();
+    if (name==='stats' && typeof renderCharts==='function') renderCharts();
   }
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 
@@ -435,11 +457,30 @@
   let session = null;
   const enc = new TextEncoder(), dec = new TextDecoder();
 
+  // keep the screen on: Wake Lock API where available, otherwise a tiny silent looping video
+  let wakeVideo = null, wakeMode = '–';
+  function wakeVid(){
+    if (!wakeVideo){
+      wakeVideo = document.createElement('video');
+      wakeVideo.setAttribute('playsinline',''); wakeVideo.setAttribute('muted',''); wakeVideo.muted = true; wakeVideo.loop = true;
+      wakeVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0.01;pointer-events:none;bottom:0;left:0';
+      wakeVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAM0bW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAl50cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHWbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABgW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAUFzdGJsAAAAwXN0c2QAAAAAAAAAAQAAALFhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAAN2F2Y0MBZAAK/+EAGWdkAAqscgRewEQAAAMABAAAAwAIPEiWEYABAAdo6EOPEyEw/fj4AAAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAAtgAAALYAAAABhzdHRzAAAAAAAAAAEAAAACAABAAAAAABRzdHNzAAAAAAAAAAEAAAABAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAACAAAAAQAAABxzdHN6AAAAAAAAAAAAAAACAAACygAAAA4AAAAUc3RjbwAAAAAAAAABAAADZAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNjAuMTYuMTAwAAAACGZyZWUAAALgbWRhdAAAArEGBf//rdxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0xIHJlZj0xNiBkZWJsb2NrPTE6LTM6LTMgYW5hbHlzZT0weDM6MHgxMzMgbWU9dW1oIHN1Ym1lPTEwIHBzeT0xIHBzeV9yZD0yLjAwOjAuNzAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MjQgY2hyb21hX21lPTEgdHJlbGxpcz0yIDh4OGRjdD0xIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS00IHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTggYl9weXJhbWlkPTIgYl9hZGFwdD0yIGJfYmlhcz0wIGRpcmVjdD0zIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MiBrZXlpbnQ9MjUwIGtleWludF9taW49MSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTYwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMjAAgAAAABFliIEAAvnP/vfUt8yy7gcjgQAAAApBmggtiC+c//7w';
+      document.body.appendChild(wakeVideo);
+    }
+    return wakeVideo;
+  }
   async function wake(){
+    const want = SET.keepAwake && running;
     try{
-      if (SET.keepAwake && running && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>wakeLock=null); }
-      if ((!SET.keepAwake || !running) && wakeLock){ await wakeLock.release(); wakeLock=null; }
+      if (want && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{ wakeLock=null; }); }
+      if (!want && wakeLock){ await wakeLock.release(); wakeLock=null; }
+    }catch(e){ wakeLock=null; }
+    try{
+      if (want && !wakeLock){ await wakeVid().play(); }
+      else if (wakeVideo) wakeVideo.pause();
     }catch(e){}
+    wakeMode = !SET.keepAwake ? 'išjungta' : !running ? 'įsijungs prisijungus' : wakeLock ? 'veikia ✓' : (wakeVideo && !wakeVideo.paused) ? 'veikia ✓ (vaizdo būdu)' : 'nepavyko';
+    const el=$('wakeState'); if (el) el.textContent = wakeMode;
   }
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') wake(); });
 
@@ -552,6 +593,32 @@
     }catch(e){}
     try{ await send('ATAR'); }catch(e){}
   }
+  // other control units answer on their own CAN ids; set the receive filter for each
+  async function ask(tx, rxId, cmd, prefix){
+    try{
+      await send('ATSH'+tx); curHeader=tx;
+      await send('ATCRA'+rxId);
+      const r = await send(cmd, 4000);
+      return parse(r, prefix);
+    }catch(e){ return null; }
+    finally{ try{ await send('ATAR'); }catch(e){} }
+  }
+  // climate unit: indoor (F) and outdoor (G) temperature, (x/2)-40 °C
+  async function readClimate(){
+    const b = await ask('7B3','7BB','220100','620100');
+    if (!has(b,6)) return;
+    const tIn = b[5]/2-40, tOut = b[6]/2-40;
+    if (b[6]>0 && b[6]<255 && tOut>-40 && tOut<60){ S.tOut = tOut; S.tOutAt = Date.now(); }
+    if (b[5]>0 && b[5]<255 && tIn>-40 && tIn<70) S.tIn = tIn;
+  }
+  // tyre pressure monitor: pressure E,J,O,T /5 psi; temperature F,K,P,U -50 °C
+  async function readTpms(){
+    const b = await ask('7A0','7A8','22C00B','62C00B');
+    if (!has(b,20)) return;
+    const wheel = (pi, ti) => { const psi=b[pi]/5, t=b[ti]-50; return (b[pi]>0 && psi>5 && psi<80) ? { bar: psi*0.0689476, t: (t>-40 && t<120) ? t : null } : null; };
+    const w = { FL:wheel(4,5), FR:wheel(9,10), RL:wheel(14,15), RR:wheel(19,20) };
+    if (Object.values(w).some(Boolean)){ S.tires = w; S.tiresAt = Date.now(); }
+  }
   async function initElm(){
     setStatus('Inicializuojama…','busy');
     try{ await send('ATZ', 4000); }catch(e){}
@@ -573,7 +640,10 @@
             await query('7E4','2103','6103',b=>decCells(b,32));
             await query('7E4','2104','6104',b=>decCells(b,64));
           }
-          if (n%15===0) await readOdo();
+          const needOdo = !(S.odoAt && S.odoAt >= connStart);
+          if (n%15===0 || (needOdo && n%3===0)) await readOdo();
+          if (n%20===5) await readClimate();
+          if (n%60===10) await readTpms();
           setStatus('Prisijungta','on'); showErr(''); S.t=Date.now(); track(); render(); save();
           n++;
         } else {
@@ -754,6 +824,7 @@
         // distance and energy are always measured over the same interval
         if (!trip) trip = { id:Date.now(), t0:Date.now(), odo0:odo, ced0:S.ced, cec0:S.cec, soc0:soc };
         Object.assign(trip, { t1:Date.now(), odo1:odo, ced1:S.ced, cec1:S.cec, soc1:soc });
+        if (S.tOut!=null && S.tOutAt && Date.now()-S.tOutAt < 10*60e3){ trip.tN=(trip.tN||0)+1; trip.tSum=(trip.tSum||0)+S.tOut; trip.tOut=Math.round(trip.tSum/trip.tN*10)/10; }
         const st = tripStats(trip), hrs = (trip.t1-trip.t0)/3600e3;
         if (st.km > hrs*150 + 2){ log(`Kelionė atmesta: ${st.km} km per ${Math.round(hrs*60)} min – neteisinga rida`); trip=null; }
         else if (st.km>=1 && throttle('trip', 10e3)){
@@ -811,6 +882,8 @@
     setH('tripCons', ts && ts.cons!=null ? f(ts.cons,1) : (avgCons ? '<span style="color:var(--mut)">'+f(avgCons,1)+'</span>' : '–'));
     const tAvg = (S.tMin!=null && S.tMax!=null) ? Math.round((S.tMin+S.tMax)/2) : null;
     setH('battT', tAvg==null ? '–' : u(tAvg,'°C'));
+    setH('outT', S.tOut==null ? '–' : u(Math.round(S.tOut),'°C'));
+    renderTires();
     renderAlerts();
 
     // charging card
@@ -849,9 +922,25 @@
     // STATS
     renderStats(avgCons);
     renderDataInfo();
-    if (SET.tab==='charts' && throttle('charts', 5000)) renderCharts();
+    if (SET.tab==='stats' && throttle('charts', 5000)) renderCharts();
   }
 
+  function renderTires(){
+    const w = S.tires;
+    $('tireCard').style.display = w ? '' : 'none';
+    if (!w) return;
+    const vals = Object.values(w).filter(Boolean).map(x=>x.bar), mx = Math.max(...vals);
+    const name = {FL:'Priekis kairė',FR:'Priekis dešinė',RL:'Galas kairė',RR:'Galas dešinė'};
+    for (const k of ['FL','FR','RL','RR']){
+      const x = w[k], el = $('t'+k);
+      if (!x){ el.className='tire'; el.innerHTML=`<div class="l">${name[k]}</div><div class="v">–</div>`; continue; }
+      const cls = x.bar < 2.0 ? 'lo' : (mx - x.bar > 0.25 || x.bar < 2.2) ? 'mid' : '';
+      el.className = 'tire '+cls;
+      el.innerHTML = `<div class="l">${name[k]}</div><div class="v">${f(x.bar,1)} <small>bar</small></div><div class="t">${x.t==null?'':x.t+' °C'}</div>`;
+    }
+    const low = ['FL','FR','RL','RR'].filter(k=>w[k] && w[k].bar<2.0);
+    $('tireNote').textContent = (low.length ? 'Per mažas slėgis – pripūskite padangas. ' : '') + 'Atnaujinta '+new Date(S.tiresAt).toLocaleTimeString('lt-LT',{hour:'2-digit',minute:'2-digit'})+'. Rekomenduojamas slėgis – ant vairuotojo durelių staktos.';
+  }
   function renderAlerts(){
     const a = [];
     if (S.aux!=null && S.aux < 11.8) a.push(['bad','!',`<b>12 V akumuliatorius silpnas</b> – ${f(S.aux,1)} V`]);
@@ -861,6 +950,10 @@
     const soc = S.socDisp ?? S.socBms;
     if (soc!=null && soc < 15 && !S.charging) a.push(['bad','!',`<b>Žema įkrova</b> – ${Math.round(soc)} %`]);
     if (gapMsg) a.unshift(['ok','✓',gapMsg]);
+    if (running && S.t && !(S.odoAt && S.odoAt >= connStart) && Date.now()-connStart > 30e3) a.push(['warn','!','<b>Nepavyksta nuskaityti ridos</b> – kelionė dabar neįrašoma. Bandoma iš naujo.']);
+    if (S.tires && Object.values(S.tires).some(x=>x && x.bar<2.0)) a.push(['warn','!','<b>Žemas padangų slėgis</b> – žr. „Padangos“']);
+    const bkAt = LS.get('ioniqBackupAt', 0), nData = LS.get('ioniqTrips',[]).length + LS.get('ioniqCharges',[]).length;
+    if (nData >= 5 && Date.now()-bkAt > 7*864e5) a.push(['warn','!','<b>Seniai darėte kopiją</b> – Daugiau → Duomenys → Išsaugoti kopiją']);
     if (!a.length && S.t) a.push(['ok','✓','Viskas tvarkoje']);
     $('alerts').innerHTML = a.map(([c,i,t])=>`<div class="alert ${c}"><span class="ic">${i}</span><span>${t}</span></div>`).join('');
   }
@@ -980,9 +1073,9 @@
   // ---------- export helpers ----------
   function tripRow(t){
     const st=tripStats(t), d=new Date(t.t0);
-    return [stamp(t.t0), stamp(t.t1||t.t0), ymd(d), mondayOf(d), ymd(d).slice(0,7), rnd(st.km,1), rnd(t.ced1-t.ced0,2), rnd(t.cec1-t.cec0,2), rnd(st.kwh,2), rnd(st.cons,1), rnd(t.soc0,1), rnd(t.soc1,1), t.odo0??null, t.odo1??null, t.gap ? (t.est ? 'be programėlės, kWh apytiksliai' : 'be programėlės') : 'programėlė'];
+    return [stamp(t.t0), stamp(t.t1||t.t0), ymd(d), mondayOf(d), ymd(d).slice(0,7), rnd(st.km,1), rnd(t.ced1-t.ced0,2), rnd(t.cec1-t.cec0,2), rnd(st.kwh,2), rnd(st.cons,1), rnd(t.soc0,1), rnd(t.soc1,1), t.odo0??null, t.odo1??null, t.gap ? (t.est ? 'be programėlės, kWh apytiksliai' : 'be programėlės') : 'programėlė', t.tOut??null];
   }
-  const TRIP_HEAD = ['Pradžia','Pabaiga','Diena','Savaitė (pirmad.)','Mėnuo','Km','Sunaudota kWh','Atgauta kWh','Grynai kWh','kWh/100 km','SOC pradžia %','SOC pabaiga %','Rida pradžia','Rida pabaiga','Šaltinis'];
+  const TRIP_HEAD = ['Pradžia','Pabaiga','Diena','Savaitė (pirmad.)','Mėnuo','Km','Sunaudota kWh','Atgauta kWh','Grynai kWh','kWh/100 km','SOC pradžia %','SOC pabaiga %','Rida pradžia','Rida pabaiga','Šaltinis','Lauke °C'];
   function chgRow(c){
     const d=new Date(c.t0), kwh=(c.cec1-c.cec0)||0, min=((c.t1||c.t0)-c.t0)/60000;
     return c.gap ? [stamp(c.t0), stamp(c.t1||c.t0), ymd(d), 'nustatyta be programėlės', rnd(kwh,2), rnd(c.soc0,1), rnd(c.soc1,1), null, null]
@@ -1050,6 +1143,13 @@
     $('chKm').innerHTML = tkm ? bars(keys, P.lab, P.every, [{vals:km, color:'var(--acc)'}]) : empty;
     $('chKwh').innerHTML = (tused||tch) ? bars(keys, P.lab, P.every, [{vals:used, color:'var(--use)'},{vals:ch, color:'var(--gain)'}]) : empty;
     $('chCons').innerHTML = !avg ? (tkm ? '<div class="note">Dar per mažai patikimų kelionių vidurkiui (reikia bent 10 km).</div>' : empty) : bars(keys, P.lab, P.every, [{vals:cons, color:'var(--acc)'}], {avg, min:20}) + '<div class="glab"><span></span><span>punktyras – vidurkis</span></div>';
+    {
+      const bins = [[-99,-10,'< −10°'],[-10,0,'−10…0°'],[0,10,'0…10°'],[10,20,'10…20°'],[20,99,'> 20°']].map(([lo,hi,l])=>({lo,hi,l,km:0,kwh:0}));
+      for (const t of H('ioniqTrips')){ const st=tripStats(t); if (!st.ok || t.tOut==null) continue; const bn=bins.find(x=>t.tOut>=x.lo && t.tOut<x.hi); bn.km+=st.km; bn.kwh+=st.kwh; }
+      const used = bins.filter(x=>x.km>=5);
+      $('chTemp').innerHTML = used.length ? bars(bins.map(x=>x.l), k=>k, 1, [{vals:bins.map(x=>x.km>=5 ? x.kwh/x.km*100 : 0), color:'var(--use)'}], {min:20}) + '<div class="note">Rodomi intervalai, kuriuose nuvažiuota bent 5 km.</div>'
+        : '<div class="note">Atsiras, kai susikaups kelionių su lauko temperatūra. Žiemą sąnaudos paprastai būna 30–50 % didesnės.</div>';
+    }
     const sh = H('ioniqSoh');
     if (sh.length>=2){
       const W=320,Hh=100, mn=Math.min(...sh.map(x=>x.soh))-0.5, mx=Math.max(...sh.map(x=>x.soh))+0.5;
@@ -1138,6 +1238,32 @@
   $('btnCopyT').onclick = () => copyText(tsvOf(TRIP_HEAD, H('ioniqTrips').map(tripRow)), $('btnCopyT'), 'Kopijuoti kelionių lentelę');
   $('btnCopyM').onclick = () => copyText(tsvOf(SUM_HEAD('Mėnuo'), sumRows(d=>ymd(d).slice(0,7))), $('btnCopyM'), 'Kopijuoti mėnesių suvestinę');
 
+  // ---------- backup / restore ----------
+  const BK_KEYS = ['ioniqTrips','ioniqCharges','ioniqCellHist','ioniqSoh','ioniqSettings','ioniqCounters','ioniqResetAt'];
+  function renderBackup(){ const at=LS.get('ioniqBackupAt',0); $('bkState').textContent = at ? stamp(at) : 'dar nedaryta'; }
+  $('btnBackup').onclick = async () => {
+    const data = { app:'ioniq-monitorius', version:APP_VERSION, created:new Date().toISOString(), data:{} };
+    BK_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if (v!=null) data.data[k]=JSON.parse(v); });
+    const res = await deliver(new Blob([JSON.stringify(data)],{type:'application/json'}), 'ioniq_kopija_'+ymd(new Date())+'.json');
+    if (!/Atšaukta/.test(res)){ LS.set('ioniqBackupAt', Date.now()); renderBackup(); }
+    $('bkRes').textContent = res.replace('naudokite „Kopijuoti“ mygtukus','atidarykite kopiją kitoje naršyklėje');
+  };
+  $('btnRestore').onclick = () => $('restoreFile').click();
+  $('restoreFile').onchange = async ev => {
+    const file = ev.target.files[0]; ev.target.value=''; if (!file) return;
+    try{
+      const j = JSON.parse(await file.text());
+      if (j.app!=='ioniq-monitorius' || !j.data) throw new Error('tai ne šios programėlės kopija');
+      const merge = (k) => { const cur=LS.get(k,[]), ids=new Set(cur.map(x=>String(x.id))); const add=(j.data[k]||[]).filter(x=>!ids.has(String(x.id))); LS.set(k, [...cur, ...add].sort((a,b)=>b.t0-a.t0)); return add.length; };
+      const nt = merge('ioniqTrips'), nc = merge('ioniqCharges');
+      const ch = LS.get('ioniqCellHist',[]); if (!ch.length && j.data.ioniqCellHist) LS.set('ioniqCellHist', j.data.ioniqCellHist);
+      const sh = LS.get('ioniqSoh',[]), sd = new Set(sh.map(x=>x.d)); LS.set('ioniqSoh', [...sh, ...(j.data.ioniqSoh||[]).filter(x=>!sd.has(x.d))].sort((a,b)=>a.d<b.d?-1:1));
+      $('bkRes').textContent = `Atkurta: ${nt} kel., ${nc} krov. (jau buvę įrašai nedubliuojami). Kopija sukurta ${String(j.created).slice(0,10)}.`;
+      log('Atkurta iš kopijos: '+nt+' kel., '+nc+' krov.'); render();
+    }catch(e){ $('bkRes').textContent = 'Nepavyko atkurti: '+errText(e); }
+  };
+  renderBackup();
+
   // ---------- reset history ----------
   const HIST_KEYS = ['ioniqTrips','ioniqCharges','ioniqCellHist','ioniqSoh'];
   function wipeHistory(){ HIST_KEYS.forEach(k=>LS.set(k, [])); trip=null; chg=null; session=null; LS.set('ioniqResetAt', Date.now()); log('Istorija išvalyta'); }
@@ -1206,16 +1332,20 @@
   $('btnUpdate').onclick = () => { location.href = location.pathname+'?v='+Date.now(); };
 
   // ---------- wiring ----------
-  $('btnConn').onclick = () => running ? disconnect() : connect();
+  $('btnConn').onclick = () => { if (!running && SET.keepAwake && !navigator.wakeLock){ try{ wakeVid().play().then(()=>wakeVideo.pause()).catch(()=>{}); }catch(e){} } return running ? disconnect() : connect(); };
   $('btnDemo').onclick = () => demoTimer ? stopDemo() : startDemo();
   $('btnCopy').onclick = async () => { try{ await navigator.clipboard.writeText(logLines.join('\n')); $('btnCopy').textContent='Nukopijuota ✓'; }catch(e){ $('btnCopy').textContent='Nepavyko nukopijuoti'; } };
 
   $('ver').textContent = 'v'+APP_VERSION;
-  applyTheme(); syncToggles(); showTab(SET.tab || 'drive');
+  applyTheme(); syncToggles(); showTab(SET.tab==='charts' ? 'stats' : (SET.tab || 'drive'));
   load(); render();
   log('Versija '+APP_VERSION+' ('+APP_DATE+') · '+navigator.userAgent);
   if (!navigator.bluetooth) log('navigator.bluetooth nepasiekiamas šioje naršyklėje');
   checkUpdate(); setInterval(checkUpdate, 10*60e3);
+  wake();
+  if ('serviceWorker' in navigator && location.protocol==='https:'){
+    navigator.serviceWorker.register('sw.js').then(()=>{ $('swState').textContent='įjungta ✓'; }).catch(e=>{ $('swState').textContent='nepalaikoma'; log('Be interneto režimas: '+errText(e)); });
+  } else $('swState').textContent = 'nepalaikoma';
 })();
 </script>
 </body>
