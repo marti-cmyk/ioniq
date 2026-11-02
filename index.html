@@ -236,6 +236,7 @@
       <div class="tire" id="tRL"></div><div class="tire" id="tRR"></div>
     </div>
     <div class="note" id="tireNote" style="margin-top:8px"></div>
+    <button class="link" id="btnTires">Nuskaityti dabar</button>
   </div>
 
 </section>
@@ -400,7 +401,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 17, APP_DATE = '2026-11-01';
+  const APP_VERSION = 18, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -614,11 +615,14 @@
   // tyre pressure monitor: pressure E,J,O,T /5 psi; temperature F,K,P,U -50 °C
   async function readTpms(){
     const b = await ask('7A0','7A8','22C00B','62C00B');
-    if (!has(b,20)) return;
+    if (!has(b,20)){ S.tireErr = b ? 'atsakymas per trumpas ('+b.length+' B)' : 'padangų modulis neatsako'; log('Padangos: '+S.tireErr); return; }
+    S.tireErr = null;
     const wheel = (pi, ti) => { const psi=b[pi]/5, t=b[ti]-50; return (b[pi]>0 && psi>5 && psi<80) ? { bar: psi*0.0689476, t: (t>-40 && t<120) ? t : null } : null; };
     const w = { FL:wheel(4,5), FR:wheel(9,10), RL:wheel(14,15), RR:wheel(19,20) };
     if (Object.values(w).some(Boolean)){ S.tires = w; S.tiresAt = Date.now(); }
+    else { S.tireErr = 'jutikliai dar nesiunčia duomenų – pavažiuokite kelias minutes'; log('Padangos: visi slėgiai 0'); }
   }
+  $('btnTires').onclick = async () => { if (!running){ $('tireNote').textContent='Pirma prisijunkite prie automobilio.'; return; } $('tireNote').textContent='Skaitoma…'; await readTpms(); renderTires(); };
   async function initElm(){
     setStatus('Inicializuojama…','busy');
     try{ await send('ATZ', 4000); }catch(e){}
@@ -926,20 +930,24 @@
   }
 
   function renderTires(){
-    const w = S.tires;
-    $('tireCard').style.display = w ? '' : 'none';
-    if (!w) return;
+    const w = S.tires, REC = 2.6;
+    $('tireCard').style.display = (w || running || S.tireErr) ? '' : 'none';
+    if (!w){
+      for (const k of ['FL','FR','RL','RR']){ const el=$('t'+k); el.className='tire'; el.innerHTML=`<div class="l">${({FL:'Priekis kairė',FR:'Priekis dešinė',RL:'Galas kairė',RR:'Galas dešinė'})[k]}</div><div class="v">–</div>`; }
+      $('tireNote').textContent = S.tireErr ? 'Nepavyko: '+S.tireErr+'.' : 'Laukiama duomenų… (nuskaitoma kas ~1 min.)';
+      return;
+    }
     const vals = Object.values(w).filter(Boolean).map(x=>x.bar), mx = Math.max(...vals);
     const name = {FL:'Priekis kairė',FR:'Priekis dešinė',RL:'Galas kairė',RR:'Galas dešinė'};
     for (const k of ['FL','FR','RL','RR']){
       const x = w[k], el = $('t'+k);
       if (!x){ el.className='tire'; el.innerHTML=`<div class="l">${name[k]}</div><div class="v">–</div>`; continue; }
-      const cls = x.bar < 2.0 ? 'lo' : (mx - x.bar > 0.25 || x.bar < 2.2) ? 'mid' : '';
+      const cls = x.bar < REC-0.3 ? 'lo' : (x.bar < REC-0.15 || mx - x.bar > 0.2) ? 'mid' : '';
       el.className = 'tire '+cls;
       el.innerHTML = `<div class="l">${name[k]}</div><div class="v">${f(x.bar,1)} <small>bar</small></div><div class="t">${x.t==null?'':x.t+' °C'}</div>`;
     }
-    const low = ['FL','FR','RL','RR'].filter(k=>w[k] && w[k].bar<2.0);
-    $('tireNote').textContent = (low.length ? 'Per mažas slėgis – pripūskite padangas. ' : '') + 'Atnaujinta '+new Date(S.tiresAt).toLocaleTimeString('lt-LT',{hour:'2-digit',minute:'2-digit'})+'. Rekomenduojamas slėgis – ant vairuotojo durelių staktos.';
+    const low = ['FL','FR','RL','RR'].filter(k=>w[k] && w[k].bar<REC-0.15);
+    $('tireNote').textContent = (low.length ? 'Per mažas slėgis – pripūskite iki 2,6 bar. ' : '') + 'Rekomenduojama 2,6 bar. Atnaujinta '+new Date(S.tiresAt).toLocaleTimeString('lt-LT',{hour:'2-digit',minute:'2-digit'})+'. Šaltos padangos rodo mažiau nei įšilusios.';
   }
   function renderAlerts(){
     const a = [];
@@ -951,7 +959,7 @@
     if (soc!=null && soc < 15 && !S.charging) a.push(['bad','!',`<b>Žema įkrova</b> – ${Math.round(soc)} %`]);
     if (gapMsg) a.unshift(['ok','✓',gapMsg]);
     if (running && S.t && !(S.odoAt && S.odoAt >= connStart) && Date.now()-connStart > 30e3) a.push(['warn','!','<b>Nepavyksta nuskaityti ridos</b> – kelionė dabar neįrašoma. Bandoma iš naujo.']);
-    if (S.tires && Object.values(S.tires).some(x=>x && x.bar<2.0)) a.push(['warn','!','<b>Žemas padangų slėgis</b> – žr. „Padangos“']);
+    if (S.tires && Object.values(S.tires).some(x=>x && x.bar<2.3)) a.push(['warn','!','<b>Žemas padangų slėgis</b> – žr. „Padangos“']);
     const bkAt = LS.get('ioniqBackupAt', 0), nData = LS.get('ioniqTrips',[]).length + LS.get('ioniqCharges',[]).length;
     if (nData >= 5 && Date.now()-bkAt > 7*864e5) a.push(['warn','!','<b>Seniai darėte kopiją</b> – Daugiau → Duomenys → Išsaugoti kopiją']);
     if (!a.length && S.t) a.push(['ok','✓','Viskas tvarkoje']);
