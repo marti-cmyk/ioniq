@@ -378,7 +378,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 15, APP_DATE = '2026-11-01';
+  const APP_VERSION = 16, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -613,9 +613,9 @@
     }
     throw new Error('Nerasta OBD duomenų paslauga šiame įrenginyje.');
   }
-  let connStart = 0;
+  let connStart = 0, gapChecked = false, gapMsg = null;
   async function start(){
-    connStart = Date.now();
+    connStart = Date.now(); gapChecked = false;
     $('btnConn').textContent='Atsijungti';
     await initElm();
     running=true; manualStop=false; wake();
@@ -691,12 +691,52 @@
   const CONS_OK = c => c!=null && c>=6 && c<=40;
   function tripStats(t){
     const km = (t.odo1!=null && t.odo0!=null) ? t.odo1-t.odo0 : 0;
-    const kwh = (t.ced1-t.ced0) - (t.cec1-t.cec0);
+    const kwh = t.kwhEst!=null ? t.kwhEst : (t.ced1-t.ced0) - (t.cec1-t.cec0);
     const cons = km>=3 ? kwh/km*100 : null;
-    return { km, kwh, cons, ok: km>=3 && CONS_OK(cons) };
+    return { km, kwh, cons, ok: km>=3 && !t.est && CONS_OK(cons) };
+  }
+  // share of discharged energy won back by regen, learned from the owner's own trips (default 15 %)
+  function regenRatio(){
+    let ced=0, cec=0; for (const t of LS.get('ioniqTrips',[])){ if (t.gap || !tripStats(t).ok) continue; ced+=t.ced1-t.ced0; cec+=t.cec1-t.cec0; }
+    return ced>=5 ? Math.min(0.35, Math.max(0.05, cec/ced)) : 0.15;
+  }
+  // The app cannot run while closed, but the car keeps its own lifetime counters (odometer,
+  // energy discharged, energy charged). On reconnect, compare with the values seen last time and
+  // record whatever happened in between: driving, charging, or both.
+  function checkGap(odo, soc){
+    const L = LS.get('ioniqCounters', null);
+    if (!L || L.t >= connStart) return;
+    const dKm = odo - L.odo, dCed = S.ced - L.ced, dCecAll = S.cec - L.cec;
+    if (dKm < 0 || dCed < -0.05 || dCecAll < -0.05 || dKm > 3000){ log('Tarpo patikra: skaitikliai nesutampa – praleidžiama'); return; }
+    const liveCh = LS.get('ioniqCharges',[]).filter(c=>!c.gap && c.t0>=L.t).reduce((a,c)=>a+((c.cec1-c.cec0)||0),0);
+    const dCec = Math.max(0, dCecAll - liveCh), now = Date.now(), msg = [];
+    const socUp = soc!=null && L.soc!=null && soc - L.soc >= 3;
+    const charged = socUp || dCec > Math.max(0.5, dCed*0.45);
+    let tripKwh = null, est = false, chKwh = 0;
+    if (!charged){ tripKwh = dCed - dCec; }
+    else { const R = dKm>0 ? regenRatio()*dCed : 0; chKwh = Math.max(0, dCec - R); if (dKm>=1){ tripKwh = dCed - R; est = true; } }
+    if (dKm >= 1){
+      const t = { id:now, t0:L.t, t1:now, odo0:L.odo, odo1:odo, ced0:L.ced, ced1:S.ced, cec0:L.cec, cec1:S.cec, soc0:L.soc, soc1:soc, gap:true };
+      if (est){ t.est = true; t.kwhEst = tripKwh; }
+      const list = LS.get('ioniqTrips',[]); list.unshift(t); list.sort((a,b)=>b.t0-a.t0); LS.set('ioniqTrips', list.slice(0,2000));
+      msg.push(`${dKm} km${est ? ' (≈'+f(tripKwh,1)+' kWh)' : ', '+f(tripKwh,1)+' kWh'}`);
+    }
+    if (charged && chKwh >= 0.3){
+      const c = { id:'g'+now, t0:L.t, t1:now, cec0:0, cec1:chKwh, soc0:L.soc, soc1:soc, type:'?', gap:true };
+      const list = LS.get('ioniqCharges',[]); list.unshift(c); list.sort((a,b)=>b.t0-a.t0); LS.set('ioniqCharges', list.slice(0,2000));
+      msg.push(`įkrauta ≈${f(chKwh,1)} kWh`);
+    }
+    if (msg.length){ gapMsg = '<b>Kol programėlė buvo išjungta:</b> '+msg.join(', '); log('Tarpas užpildytas: '+msg.join(', ')); }
   }
   function track(){
     const soc = S.socDisp ?? S.socBms;
+    {
+      const odoNow = (S.odoAt && S.odoAt >= connStart) ? S.odo : null;
+      if (S.ced!=null && S.cec!=null && odoNow!=null){
+        if (!gapChecked){ gapChecked = true; checkGap(odoNow, soc); }
+        LS.set('ioniqCounters', { t:Date.now(), odo:odoNow, ced:S.ced, cec:S.cec, soc });
+      }
+    }
     if (trip && Date.now()-(trip.t1||trip.t0) > 10*60e3) { trip=null; } // long pause -> new trip
     if (S.charging){
       if (trip) { trip=null; }
@@ -820,6 +860,7 @@
     if (S.cMax!=null && S.cMin!=null && (S.cMax-S.cMin) > 0.08) a.push(['warn','!',`<b>Elementų disbalansas</b> – ${Math.round((S.cMax-S.cMin)*1000)} mV`]);
     const soc = S.socDisp ?? S.socBms;
     if (soc!=null && soc < 15 && !S.charging) a.push(['bad','!',`<b>Žema įkrova</b> – ${Math.round(soc)} %`]);
+    if (gapMsg) a.unshift(['ok','✓',gapMsg]);
     if (!a.length && S.t) a.push(['ok','✓','Viskas tvarkoje']);
     $('alerts').innerHTML = a.map(([c,i,t])=>`<div class="alert ${c}"><span class="ic">${i}</span><span>${t}</span></div>`).join('');
   }
@@ -926,7 +967,7 @@
     $('btnMoreTrips').style.display = trips.length > tripShow ? '' : 'none';
     $('trips').innerHTML = trips.length ? trips.slice(0,tripShow).map(t=>{
       const st=tripStats(t), d=new Date(t.t0);
-      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})}, ${pad(d.getHours())}:${pad(d.getMinutes())}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'} → ${t.soc1!=null?Math.round(t.soc1):'–'} % · ${f(st.kwh,1)} kWh</div></div><div class="b"><div>${f(st.km,0)} km</div><div class="a">${st.ok?f(st.cons,1)+' kWh/100':'–'}</div></div></div>`;
+      return `<div class="trow"><div><div>${d.toLocaleDateString('lt-LT',{month:'short',day:'numeric'})}, ${pad(d.getHours())}:${pad(d.getMinutes())}${t.gap?' <span class="a">· be programėlės</span>':''}</div><div class="a">${t.soc0!=null?Math.round(t.soc0):'–'} → ${t.soc1!=null?Math.round(t.soc1):'–'} % · ${t.est?'≈':''}${f(st.kwh,1)} kWh</div></div><div class="b"><div>${f(st.km,0)} km</div><div class="a">${st.ok?f(st.cons,1)+' kWh/100':'–'}</div></div></div>`;
     }).join('') : '<div class="note">Kelionės įrašomos automatiškai, kai važiuojant programėlė prisijungusi (nuo 1 km).</div>';
   }
   $('btnMoreTrips').onclick = () => { tripShow += 20; render(); };
@@ -939,12 +980,13 @@
   // ---------- export helpers ----------
   function tripRow(t){
     const st=tripStats(t), d=new Date(t.t0);
-    return [stamp(t.t0), stamp(t.t1||t.t0), ymd(d), mondayOf(d), ymd(d).slice(0,7), rnd(st.km,1), rnd(t.ced1-t.ced0,2), rnd(t.cec1-t.cec0,2), rnd(st.kwh,2), rnd(st.cons,1), rnd(t.soc0,1), rnd(t.soc1,1), t.odo0??null, t.odo1??null];
+    return [stamp(t.t0), stamp(t.t1||t.t0), ymd(d), mondayOf(d), ymd(d).slice(0,7), rnd(st.km,1), rnd(t.ced1-t.ced0,2), rnd(t.cec1-t.cec0,2), rnd(st.kwh,2), rnd(st.cons,1), rnd(t.soc0,1), rnd(t.soc1,1), t.odo0??null, t.odo1??null, t.gap ? (t.est ? 'be programėlės, kWh apytiksliai' : 'be programėlės') : 'programėlė'];
   }
-  const TRIP_HEAD = ['Pradžia','Pabaiga','Diena','Savaitė (pirmad.)','Mėnuo','Km','Sunaudota kWh','Atgauta kWh','Grynai kWh','kWh/100 km','SOC pradžia %','SOC pabaiga %','Rida pradžia','Rida pabaiga'];
+  const TRIP_HEAD = ['Pradžia','Pabaiga','Diena','Savaitė (pirmad.)','Mėnuo','Km','Sunaudota kWh','Atgauta kWh','Grynai kWh','kWh/100 km','SOC pradžia %','SOC pabaiga %','Rida pradžia','Rida pabaiga','Šaltinis'];
   function chgRow(c){
     const d=new Date(c.t0), kwh=(c.cec1-c.cec0)||0, min=((c.t1||c.t0)-c.t0)/60000;
-    return [stamp(c.t0), stamp(c.t1||c.t0), ymd(d), c.type||'', rnd(kwh,2), rnd(c.soc0,1), rnd(c.soc1,1), min>=1 ? rnd(kwh/(min/60),1) : null, Math.round(min)];
+    return c.gap ? [stamp(c.t0), stamp(c.t1||c.t0), ymd(d), 'nustatyta be programėlės', rnd(kwh,2), rnd(c.soc0,1), rnd(c.soc1,1), null, null]
+      : [stamp(c.t0), stamp(c.t1||c.t0), ymd(d), c.type||'', rnd(kwh,2), rnd(c.soc0,1), rnd(c.soc1,1), min>=1 ? rnd(kwh/(min/60),1) : null, Math.round(min)];
   }
   const CHG_HEAD = ['Pradžia','Pabaiga','Diena','Tipas','Įkrauta kWh','SOC nuo %','SOC iki %','Vid. galia kW','Trukmė, min'];
   const rnd = (v,d) => (v==null||!isFinite(v)) ? null : Number(Number(v).toFixed(d));
