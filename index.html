@@ -229,7 +229,7 @@
     <div class="chip"><div class="v num" id="outT">–</div><div class="l">Lauke</div></div>
   </div>
 
-  <div class="card" id="tireCard" style="display:none">
+  <div class="card" id="tireCard">
     <h2>Padangos</h2>
     <div class="tires num">
       <div class="tire" id="tFL"></div><div class="tire" id="tFR"></div>
@@ -401,7 +401,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 18, APP_DATE = '2026-11-01';
+  const APP_VERSION = 19, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -931,10 +931,10 @@
 
   function renderTires(){
     const w = S.tires, REC = 2.6;
-    $('tireCard').style.display = (w || running || S.tireErr) ? '' : 'none';
+    $('tireCard').style.display = '';
     if (!w){
       for (const k of ['FL','FR','RL','RR']){ const el=$('t'+k); el.className='tire'; el.innerHTML=`<div class="l">${({FL:'Priekis kairė',FR:'Priekis dešinė',RL:'Galas kairė',RR:'Galas dešinė'})[k]}</div><div class="v">–</div>`; }
-      $('tireNote').textContent = S.tireErr ? 'Nepavyko: '+S.tireErr+'.' : 'Laukiama duomenų… (nuskaitoma kas ~1 min.)';
+      $('tireNote').textContent = !running ? 'Prisijunkite prie automobilio – slėgis bus nuskaitytas per ~1 min. Rekomenduojama 2,6 bar.' : S.tireErr ? 'Nepavyko: '+S.tireErr+'.' : 'Laukiama duomenų… (nuskaitoma kas ~1 min.)';
       return;
     }
     const vals = Object.values(w).filter(Boolean).map(x=>x.bar), mx = Math.max(...vals);
