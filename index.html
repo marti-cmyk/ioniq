@@ -401,7 +401,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 19, APP_DATE = '2026-11-01';
+  const APP_VERSION = 20, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -595,14 +595,19 @@
     try{ await send('ATAR'); }catch(e){}
   }
   // other control units answer on their own CAN ids; set the receive filter for each
+  // Long answers come in several CAN frames; the adapter must send a "flow control" frame back to
+  // that unit, otherwise only the first frame arrives. Set it explicitly for non-standard ids.
   async function ask(tx, rxId, cmd, prefix){
     try{
       await send('ATSH'+tx); curHeader=tx;
       await send('ATCRA'+rxId);
+      try{ await send('ATFCSH'+tx); await send('ATFCSD300000'); await send('ATFCSM1'); }catch(e){}
       const r = await send(cmd, 4000);
-      return parse(r, prefix);
+      const b = parse(r, prefix);
+      if (!b) log('  '+cmd+' ('+tx+') atsakymas: '+(r||'').replace(/[\r\n]+/g,' | ').trim());
+      return b;
     }catch(e){ return null; }
-    finally{ try{ await send('ATAR'); }catch(e){} }
+    finally{ try{ await send('ATFCSM0'); }catch(e){} try{ await send('ATAR'); }catch(e){} }
   }
   // climate unit: indoor (F) and outdoor (G) temperature, (x/2)-40 °C
   async function readClimate(){
