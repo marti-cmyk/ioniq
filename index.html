@@ -167,6 +167,47 @@
   nav button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:var(--dim);font-size:11px;font-weight:500}
   nav button svg{width:23px;height:23px}
   nav button.on{color:var(--acc)}
+
+  /* ================= style "Modernus" (opt-in, Daugiau → Ekranas → Stilius) ================= */
+  .ring .ticks{display:none}
+  :root[data-style="modern"]{ --r:22px; }
+  :root[data-style="modern"] body{background:radial-gradient(120% 60% at 50% -10%, color-mix(in srgb,var(--acc) 14%,var(--bg)) 0%, var(--bg) 60%) fixed var(--bg);padding-bottom:calc(env(safe-area-inset-bottom) + 104px)}
+  :root[data-style="modern"] h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  :root[data-style="modern"] h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:700;color:var(--dim);margin-bottom:14px}
+  :root[data-style="modern"] .card{background:linear-gradient(180deg,color-mix(in srgb,var(--s1) 92%,var(--txt)) 0%,var(--s1) 100%);border:1px solid color-mix(in srgb,var(--txt) 7%,transparent);border-radius:var(--r);padding:18px;box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
+  :root[data-theme="light"][data-style="modern"] .card,:root[data-theme="light"][data-style="modern"] .hero{background:var(--s1);box-shadow:0 8px 24px -16px rgba(20,30,40,.25)}
+  :root[data-style="modern"] .hero{padding:22px 0 18px;background:radial-gradient(70% 70% at 50% 40%, color-mix(in srgb,var(--acc) 10%,var(--s1)) 0%, var(--s1) 70%)}
+  :root[data-style="modern"] .ring{width:min(70vw,262px)}
+  :root[data-style="modern"] .ring .ticks{display:inline}
+  :root[data-style="modern"] #ringArc{stroke-width:14;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--acc) 55%,transparent))}
+  :root[data-style="modern"] .ring svg circle:first-child{stroke-width:14;stroke:color-mix(in srgb,var(--txt) 6%,transparent)}
+  :root[data-style="modern"] .soc{font-size:clamp(60px,19vw,84px);font-weight:200;letter-spacing:-3px}
+  :root[data-style="modern"] .sub1{font-size:14px;letter-spacing:.3px}
+  :root[data-style="modern"] .range{font-size:28px;font-weight:600;margin-top:16px}
+  :root[data-style="modern"] .range span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;color:var(--dim);margin-top:2px}
+  :root[data-style="modern"] .pwval{font-size:40px;font-weight:200}
+  :root[data-style="modern"] .pwtag{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;font-weight:700;padding:5px 10px;border-radius:20px;background:var(--s2)}
+  :root[data-style="modern"] .gauge{height:18px;border-radius:10px;background:repeating-linear-gradient(90deg,var(--s2) 0 7px,color-mix(in srgb,var(--s2) 60%,var(--bg)) 7px 9px)}
+  :root[data-style="modern"] .gauge i{border-radius:4px;opacity:.95}
+  :root[data-style="modern"] .chips{grid-template-columns:1fr 1fr;gap:10px}
+  :root[data-style="modern"] .chip{border-radius:18px;padding:14px 16px;text-align:left;display:flex;flex-direction:column-reverse;gap:4px;border:1px solid color-mix(in srgb,var(--txt) 7%,transparent);background:var(--s1)}
+  :root[data-style="modern"] .chip .v{font-size:28px;font-weight:300}
+  :root[data-style="modern"] .chip .l{font-size:12px;letter-spacing:.2px;font-weight:600;color:var(--dim);margin:0}
+  :root[data-style="modern"] .alert{border-radius:16px;border:1px solid color-mix(in srgb,var(--txt) 7%,transparent)}
+  :root[data-style="modern"] .alert.warn{background:color-mix(in srgb,var(--warn) 12%,var(--s1))}
+  :root[data-style="modern"] .alert.bad{background:color-mix(in srgb,var(--bad) 14%,var(--s1))}
+  :root[data-style="modern"] .tile,:root[data-style="modern"] .tire{border-radius:16px;background:color-mix(in srgb,var(--s2) 70%,transparent)}
+  :root[data-style="modern"] .tile .l,:root[data-style="modern"] .tire .l,:root[data-style="modern"] .ptile .l{text-transform:uppercase;letter-spacing:1px;font-size:10px;font-weight:700;color:var(--dim)}
+  :root[data-style="modern"] .tile .v,:root[data-style="modern"] .tire .v{font-size:24px;font-weight:300}
+  :root[data-style="modern"] .ptile{border-radius:var(--r);border:1px solid color-mix(in srgb,var(--txt) 7%,transparent)}
+  :root[data-style="modern"] .ptile .km{font-size:32px;font-weight:200}
+  :root[data-style="modern"] .btn{border-radius:16px;box-shadow:0 8px 20px -12px var(--acc)}
+  :root[data-style="modern"] .btn.sec{box-shadow:none}
+  :root[data-style="modern"] .seg,:root[data-style="modern"] .seg2{border-radius:14px}
+  :root[data-style="modern"] .cgrid button{border-radius:10px}
+  :root[data-style="modern"] nav{left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);border-radius:24px;border:1px solid color-mix(in srgb,var(--txt) 9%,transparent);padding:6px;box-shadow:0 12px 30px -10px rgba(0,0,0,.55)}
+  :root[data-style="modern"] nav button{border-radius:18px;padding:8px 0}
+  :root[data-style="modern"] nav button.on{background:color-mix(in srgb,var(--acc) 16%,transparent)}
 </style>
 </head>
 <body>
@@ -192,6 +233,7 @@
     <div class="ring">
       <svg viewBox="0 0 200 200">
         <circle cx="100" cy="100" r="88" fill="none" stroke="var(--s2)" stroke-width="10"/>
+        <circle class="ticks" cx="100" cy="100" r="73" fill="none" stroke="var(--dim)" stroke-width="3" stroke-dasharray="0.8 6.84" opacity=".5"/>
         <circle id="ringArc" cx="100" cy="100" r="88" fill="none" stroke="var(--acc)" stroke-width="10" stroke-linecap="round" stroke-dasharray="552.9" stroke-dashoffset="552.9" style="transition:stroke-dashoffset .8s,stroke .5s"/>
       </svg>
       <div class="c">
@@ -351,6 +393,8 @@
     <div class="seg" id="themeSeg">
       <button data-t="dark">Tamsi</button><button data-t="night">Naktinė</button><button data-t="light">Šviesi</button>
     </div>
+    <div class="sub" style="margin:16px 0 8px">STILIUS</div>
+    <div class="seg" id="styleSeg" style="grid-template-columns:1fr 1fr"><button data-s="classic">Klasikinis</button><button data-s="modern">Modernus</button></div>
     <div class="note" style="margin-top:8px">Naktinė tema – šilti, prigesinti tonai be ryškios mėlynos šviesos, kad tamsoje nevargintų akių.</div>
     <div style="margin-top:6px">
       <div class="sw"><div>Automatinė naktinė tema<div class="d">Nuo 20:00 iki 7:00</div></div><button class="toggle" data-k="autoNight"></button></div>
@@ -401,7 +445,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = 20, APP_DATE = '2026-11-01';
+  const APP_VERSION = 21, APP_DATE = '2026-11-01';
   const USABLE_KWH = 28; // Ioniq Electric 2017-2019
   const SERVICES = [
     'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Vgate iCar Pro BLE
@@ -434,7 +478,10 @@
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
     document.querySelector('meta[name=theme-color]').setAttribute('content', bg);
     document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on', b.dataset.t===SET.theme));
+    document.documentElement.dataset.style = SET.style || 'classic';
+    document.querySelectorAll('#styleSeg button').forEach(b=>b.classList.toggle('on', b.dataset.s===(SET.style||'classic')));
   }
+  document.querySelectorAll('#styleSeg button').forEach(b=>b.onclick=()=>{ SET.style=b.dataset.s; saveSet(); applyTheme(); });
   document.querySelectorAll('#themeSeg button').forEach(b=>b.onclick=()=>{ SET.theme=b.dataset.t; saveSet(); applyTheme(); });
   $('btnTheme').onclick = () => { const order=['dark','night','light']; SET.theme = order[(order.indexOf(SET.theme)+1)%3]; SET.autoNight=false; saveSet(); applyTheme(); syncToggles(); };
   function syncToggles(){ document.querySelectorAll('.toggle').forEach(t=>t.classList.toggle('on', !!SET[t.dataset.k])); }
